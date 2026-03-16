@@ -1,0 +1,4 @@
+node_modules/
+TASKS.md
+*.log
+.DS_Store
