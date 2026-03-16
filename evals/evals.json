@@ -10,7 +10,9 @@
         {"name": "found-correct-task", "type": "output_contains", "value": "error-handling-middleware"},
         {"name": "marked-ongoing", "type": "file_contains", "file": "TASKS.md", "value": "[/] Error handling middleware"},
         {"name": "did-not-mark-done", "type": "file_not_contains", "file": "TASKS.md", "value": "[x] Error handling middleware"},
-        {"name": "announced-task", "type": "output_contains", "value": "#error-handling-middleware"}
+        {"name": "announced-task", "type": "output_contains", "value": "#error-handling-middleware"},
+        {"name": "showed-understanding", "type": "output_contains_any", "values": ["error handling", "status code", "consistent", "JSON format", "middleware"]},
+        {"name": "outlined-plan", "type": "output_contains_any", "values": ["plan", "approach", "step", "first", "then", "will"]}
       ],
       "files": ["test-fixture-tasks.md"]
     },
@@ -34,6 +36,19 @@
         {"name": "found-backlogged-task", "type": "output_contains", "value": "dashboard-project-list"},
         {"name": "warned-about-status", "type": "output_contains_any", "values": ["backlog", "shelved", "previously", "reopen", "[-]"]},
         {"name": "asked-confirmation", "type": "output_contains_any", "values": ["want to", "would you like", "should I", "confirm", "reopen"]}
+      ],
+      "files": ["test-fixture-tasks.md"]
+    },
+    {
+      "id": 4,
+      "name": "pacing-shows-plan-before-code",
+      "prompt": "The user's TASKS.md is at the working directory. The user invokes /starting-task with args '#user-auth-jwt'. Follow the skill instructions completely — find the task, mark it ongoing, and begin working on it. You have access to Read, Edit, Write, Bash, and Glob tools.",
+      "expected_output": "Should mark the task [/], then show understanding of the task (JWT auth, registration, login, protected routes) and outline an approach BEFORE attempting any file creation or code writing. The model should not jump straight to writing code.",
+      "assertions": [
+        {"name": "marked-ongoing", "type": "file_contains", "file": "TASKS.md", "value": "[/] User authentication with JWT"},
+        {"name": "restated-goal", "type": "output_contains_any", "values": ["authentication", "JWT", "register", "login", "protected route"]},
+        {"name": "showed-plan", "type": "output_contains_any", "values": ["approach", "plan", "step", "first", "start by", "begin with"]},
+        {"name": "plan-before-code", "type": "output_contains_any", "values": ["approach", "plan", "strategy", "outline", "here's how", "here's what"]}
       ],
       "files": ["test-fixture-tasks.md"]
     }
