@@ -150,13 +150,48 @@
       min-height: 0;
     }
 
+    .sidebar-card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 10px;
+    }
+
     .sidebar-card-title {
       font-size: 11px;
       font-weight: 700;
       text-transform: uppercase;
       letter-spacing: 0.08em;
       color: var(--text-muted);
+    }
+
+    .sidebar-card > .sidebar-card-title {
       margin-bottom: 10px;
+    }
+
+    .add-phase-btn {
+      width: 22px;
+      height: 22px;
+      padding: 0;
+      font-size: 15px;
+      font-weight: 400;
+      line-height: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 5px;
+      background: transparent;
+      border: 1px solid transparent;
+      color: var(--text-muted);
+      opacity: 0;
+      transition: opacity 0.15s, border-color 0.15s, color 0.15s;
+      cursor: pointer;
+    }
+
+    .sidebar-card:hover .add-phase-btn { opacity: 1; }
+    .add-phase-btn:hover {
+      border-color: var(--accent);
+      color: var(--accent);
     }
 
     .usage-row { margin-bottom: 10px; }
@@ -236,6 +271,9 @@
       flex: 1;
       overflow-y: auto;
       padding: 0;
+      margin-top: 12px;
+      border-top: 1px solid var(--border-light);
+      padding-top: 8px;
     }
 
     .phase-list::-webkit-scrollbar { width: 4px; }
@@ -367,25 +405,7 @@
       color: var(--accent);
     }
 
-    .sidebar-footer {
-      padding: 8px 0 0;
-      flex-shrink: 0;
-    }
-
-    .sidebar-footer button {
-      width: 100%;
-      background: transparent;
-      border: 1.5px dashed var(--border);
-      color: var(--text-muted);
-      font-size: 12px;
-      padding: 7px;
-    }
-
-    .sidebar-footer button:hover {
-      border-color: var(--accent);
-      color: var(--accent);
-      background: transparent;
-    }
+    .sidebar-footer { display: none; }
 
     /* ===== BOARD ===== */
     .board-area {
@@ -1006,29 +1026,24 @@
     <div class="sidebar" id="sidebar" style="display:none;">
       <div class="sidebar-section-title">Overview</div>
 
-      <!-- Progress Card -->
-      <div class="sidebar-card">
-        <div class="sidebar-card-title">Progress</div>
+      <!-- Progress + Phases Card -->
+      <div class="sidebar-card scrollable">
+        <div class="sidebar-card-header">
+          <div class="sidebar-card-title">Progress</div>
+          <button class="add-phase-btn" id="addPhaseBtn" title="Add Phase">+</button>
+        </div>
         <div class="global-stats" id="globalStats"></div>
         <div class="global-progress">
           <div class="global-progress-bar" id="globalBar"></div>
           <span class="global-pct" id="globalPct">0%</span>
         </div>
+        <div class="phase-list" id="phaseList"></div>
       </div>
 
       <!-- Usage Card -->
       <div class="sidebar-card" id="usageCard" style="display:none;">
         <div class="sidebar-card-title">Claude Code Usage</div>
         <div id="usageContent"></div>
-      </div>
-
-      <!-- Phases Card -->
-      <div class="sidebar-card scrollable">
-        <div class="sidebar-card-title">Phases</div>
-        <div class="phase-list" id="phaseList"></div>
-        <div class="sidebar-footer">
-          <button id="addPhaseBtn">+ Add Phase</button>
-        </div>
       </div>
     </div>
 
