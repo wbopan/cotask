@@ -65,7 +65,7 @@ Goal: Dashboard 视觉精致、能优雅处理边界情况，且 skill 文档足
 
 Goal: 提供一组 slash commands 让常见的任务操作可以一步完成，不需要手动编辑 TASKS.md 也不需要打开 dashboard。同时完善 skill 规范，增加完成备注和保护机制。当 creating-task 和 starting-task 命令可用且 skill 规范更新完毕时即可推进。
 
-- [ ] `/creating-task` 命令 #cmd-creating-task
+- [/] `/creating-task` 命令 #cmd-creating-task
     作为 `task-management:creating-task` 子技能。快速创建任务或阶段到当前项目的 TASKS.md。接受标题和可选的阶段/描述/AC 参数，自动生成 slug，插入到正确的 phase 位置。创建 phase 时生成 Goal 段落。如果当前正在做这件事，直接标记为 `[/]`。Skill description 要"pushy"以确保触发率。
     AC: 用户调用 `/creating-task` 后，任务或阶段被正确写入 TASKS.md 对应位置，格式符合 skill 规范。
 - [x] `/starting-task` 命令 #cmd-starting-task
