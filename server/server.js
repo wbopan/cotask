@@ -3,6 +3,8 @@ import fs from 'fs/promises';
 import fsSync from 'fs';
 import path from 'path';
 import os from 'os';
+import https from 'https';
+import { execFile } from 'child_process';
 
 const app = express();
 const PORT = 3847;
@@ -405,6 +407,62 @@ app.get('/api/watch/:projectId', async (req, res) => {
     clearTimeout(debounceTimer);
     if (watcher) watcher.close();
   });
+});
+
+// ===== OAuth Usage Proxy =====
+let cachedOAuthToken = null;
+let usageCache = { data: null, fetchedAt: 0 };
+const USAGE_CACHE_TTL = 2 * 60 * 1000; // 2 minutes
+
+function getOAuthToken() {
+  return new Promise((resolve, reject) => {
+    if (cachedOAuthToken) return resolve(cachedOAuthToken);
+    execFile('security', ['find-generic-password', '-s', 'Claude Code-credentials', '-w'], (err, stdout) => {
+      if (err) return reject(err);
+      try {
+        const creds = JSON.parse(stdout.trim());
+        cachedOAuthToken = creds.claudeAiOauth?.accessToken;
+        if (!cachedOAuthToken) return reject(new Error('No accessToken in credentials'));
+        resolve(cachedOAuthToken);
+      } catch (e) {
+        reject(e);
+      }
+    });
+  });
+}
+
+app.get('/api/usage', async (req, res) => {
+  const now = Date.now();
+  if (usageCache.data && (now - usageCache.fetchedAt) < USAGE_CACHE_TTL) {
+    return res.json(usageCache.data);
+  }
+  try {
+    const token = await getOAuthToken();
+    const result = await new Promise((resolve, reject) => {
+      const req = https.get('https://api.anthropic.com/api/oauth/usage', {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'anthropic-beta': 'oauth-2025-04-20',
+        },
+      }, (resp) => {
+        let body = '';
+        resp.on('data', chunk => body += chunk);
+        resp.on('end', () => {
+          if (resp.statusCode === 200) {
+            resolve(JSON.parse(body));
+          } else {
+            reject(new Error(`API returned ${resp.statusCode}`));
+          }
+        });
+      });
+      req.on('error', reject);
+    });
+    usageCache = { data: result, fetchedAt: Date.now() };
+    res.json(result);
+  } catch (err) {
+    if (usageCache.data) return res.json(usageCache.data);
+    res.json({ error: err.message });
+  }
 });
 
 // GET /api/health — connectivity check for client
