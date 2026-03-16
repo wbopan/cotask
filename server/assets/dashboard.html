@@ -145,9 +145,7 @@
     }
 
     .sidebar-card.scrollable {
-      flex: 1;
       overflow-y: auto;
-      min-height: 0;
     }
 
     .sidebar-card-header {
@@ -1006,7 +1004,6 @@
       </svg>
       <div>
         <div class="header-title">Phase Gate Dash</div>
-        <div class="header-file" id="filePath"></div>
       </div>
     </div>
     <div class="header-right">
@@ -1024,12 +1021,10 @@
 
     <!-- SIDEBAR -->
     <div class="sidebar" id="sidebar" style="display:none;">
-      <div class="sidebar-section-title">Overview</div>
-
       <!-- Progress + Phases Card -->
       <div class="sidebar-card scrollable">
         <div class="sidebar-card-header">
-          <div class="sidebar-card-title">Progress</div>
+          <div class="sidebar-card-title" id="projectCardTitle">Progress</div>
           <button class="add-phase-btn" id="addPhaseBtn" title="Add Phase">+</button>
         </div>
         <div class="global-stats" id="globalStats"></div>
@@ -2086,7 +2081,8 @@
         $('emptyState').style.display = 'none';
         $('sidebar').style.display = 'flex';
         $('boardArea').style.display = 'flex';
-        $('filePath').textContent = window.__projectName || projectId || 'TASKS.md';
+        const projName = window.__projectName || projectId || 'TASKS.md';
+        $('projectCardTitle').textContent = 'Project: ' + projName;
 
         lastCleanSnapshot = takeSnapshot();
         undoStack.length = 0;

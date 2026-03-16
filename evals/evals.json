@@ -1,0 +1,41 @@
+{
+  "skill_name": "starting-task",
+  "evals": [
+    {
+      "id": 1,
+      "name": "explicit-slug-todo",
+      "prompt": "The user's TASKS.md is at the working directory. The user invokes /starting-task with args '#error-handling-middleware'. Follow the skill instructions to identify the task, mark it ongoing, announce it, and describe what you would do to execute it (don't actually write code, just explain your plan).",
+      "expected_output": "Should find the 'Error handling middleware #error-handling-middleware' task in Phase 1, change its status from [ ] to [/] in TASKS.md, announce the task, and outline an execution plan based on its AC.",
+      "assertions": [
+        {"name": "found-correct-task", "type": "output_contains", "value": "error-handling-middleware"},
+        {"name": "marked-ongoing", "type": "file_contains", "file": "TASKS.md", "value": "[/] Error handling middleware"},
+        {"name": "did-not-mark-done", "type": "file_not_contains", "file": "TASKS.md", "value": "[x] Error handling middleware"},
+        {"name": "announced-task", "type": "output_contains", "value": "#error-handling-middleware"}
+      ],
+      "files": ["test-fixture-tasks.md"]
+    },
+    {
+      "id": 2,
+      "name": "already-ongoing-noop",
+      "prompt": "The user's TASKS.md is at the working directory. The user invokes /starting-task with args '#crud-api-projects'. This task is already marked [/] ongoing. Follow the skill instructions.",
+      "expected_output": "Should find the task, notice it's already [/], leave it as-is (no edit needed), announce it, and start working on it.",
+      "assertions": [
+        {"name": "recognized-already-ongoing", "type": "output_contains_any", "values": ["already", "ongoing", "in progress"]},
+        {"name": "did-not-duplicate-marker", "type": "file_not_contains", "file": "TASKS.md", "value": "[/] [/]"}
+      ],
+      "files": ["test-fixture-tasks.md"]
+    },
+    {
+      "id": 3,
+      "name": "backlogged-task-warning",
+      "prompt": "The user's TASKS.md is at the working directory. The user invokes /starting-task with args '#dashboard-project-list'. This task is marked [-] (backlogged). Follow the skill instructions.",
+      "expected_output": "Should find the task, notice it's [-] backlogged, warn the user, and ask if they want to reopen it before proceeding.",
+      "assertions": [
+        {"name": "found-backlogged-task", "type": "output_contains", "value": "dashboard-project-list"},
+        {"name": "warned-about-status", "type": "output_contains_any", "values": ["backlog", "shelved", "previously", "reopen", "[-]"]},
+        {"name": "asked-confirmation", "type": "output_contains_any", "values": ["want to", "would you like", "should I", "confirm", "reopen"]}
+      ],
+      "files": ["test-fixture-tasks.md"]
+    }
+  ]
+}
