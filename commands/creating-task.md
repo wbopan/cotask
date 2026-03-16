@@ -11,58 +11,43 @@ description: Create a new task or phase in TASKS.md. Use this whenever the user 
 
 ## What this command does
 
-Creates tasks or phases in TASKS.md so work is tracked before it begins. Without this, planned work lives only in conversation and never reaches the dashboard.
+Creates tasks or phases in TASKS.md so work is tracked before it begins. The user invoked this command because they want something created — go ahead and create it. Don't ask for confirmation first; just write it to the file, then report what you did.
 
 ## Workflow
 
-### 1. Understand the request
-
-Look at the args and conversation context:
-
-- **A task title** (e.g. "Add dark mode support"): Create a task.
-- **A phase title** (e.g. "Phase 4: Polish"): Create a new phase section.
-- **Rich input** (e.g. "Add dark mode in Phase 2, AC: toggle works"): Extract title, phase, description, and AC.
-- **Nothing or vague**: Ask the user what they want to create. Don't guess.
-
-Before creating, scan TASKS.md for similar existing tasks. If something close already exists, point it out and ask — the user might want to update the existing task rather than create a duplicate.
-
-### 2. Bootstrap TASKS.md if needed
+### 1. Bootstrap TASKS.md if needed
 
 If there's no TASKS.md in the project, create one from the template at `${CLAUDE_PLUGIN_ROOT}/skills/task-management/references/template.md`. Ask the user for a project title and first phase name, then fill in the template before adding the task.
 
-### 3. Create the entry
+### 2. Create the entry
+
+Parse the args and conversation context, then use `Edit` to write the entry into TASKS.md immediately.
 
 **For a task:**
 
-- **Target phase**: Use the phase the user specified. If none specified, use the last phase that still has `[ ]` or `[/]` tasks — that's where active work lives.
-- **Slug**: Generate a `#slug` from the title (3-4 lowercase hyphenated words). Check for uniqueness in the file.
-- **Status**: Default to `[-]` (backlog). If the user wants this done now (e.g. "do this", "start on this", "handle this right away"), mark `[/]` (ongoing) and begin executing the task immediately after confirmation — this becomes a `/starting-task` flow.
-- **AC**: If the user provided one, use it. If not, suggest a testable, implementation-agnostic AC and flag it: "I suggested this AC — want to keep or change it?"
-- **Placement**: Append at the end of the target phase's task list (before the next `## Phase` header or EOF). No blank lines between tasks.
+- **Target phase**: Use the phase the user specified. If none, use the last phase that still has `[ ]` or `[/]` tasks.
+- **Slug**: Generate a `#slug` from the title (3-4 lowercase hyphenated words). Must be unique.
+- **Status**: Default to `[ ]` (todo). If the user wants this done now (e.g. "do this", "start on this"), mark `[/]` and begin executing — this becomes a `/starting-task` flow.
+- **AC**: Always include one. Use the user's if provided; otherwise write a reasonable one yourself.
+- **Placement**: Append at the end of the target phase's task list. Follow the `/task-management` skill formatting.
 
-Use `Edit` to insert. Follow the formatting from the `/task-management` skill: title line with `#slug`, indented description, `AC:` line.
+If a very similar task already exists, mention it briefly but still create unless it's clearly a duplicate.
 
 **For a phase:**
 
 - Use `## Phase N: Name` with the next sequential number.
-- Draft a `Goal:` paragraph from context and confirm with the user.
+- Draft a `Goal:` paragraph from context.
 - Insert after the last existing phase.
-- Suggest a minimal set of tasks (3-5) that would satisfy the phase goal. These should be the smallest set of deliverables that, once done, meet the goal — not an exhaustive wishlist. Present them for the user to pick, edit, or discard before writing any to the file.
+- Suggest a minimal set of tasks (3-5) for the phase goal, then write them all in one go.
 
-### 4. Confirm
+### 3. Confirm briefly
 
-Present each created task (or phase) in a summary table:
+One or two lines is enough:
 
-| Field | Value |
-|-------|-------|
-| Title | Fix Login Auth Bugs |
-| ID | `#fix-auth-bug` |
-| Phase | Phase 2: Polish |
-| Status | Backlog |
-| AC | SSO login succeeds on all tested providers; no 403 in logs. |
+> Created `#fix-auth-bug` in Phase 2 (todo). AC: SSO login succeeds on all tested providers.
 
-If multiple tasks were created (e.g. when bootstrapping a phase), show one table per task. If you auto-suggested the AC, note that below the table and ask if the user wants to adjust.
+For multiple tasks, a compact bullet list. No tables.
 
-### 5. Resume prior work
+### 4. Resume prior work
 
-If this command was triggered mid-task (e.g. the user thought of something to track while working on something else), don't derail the current flow. Create the task, show the summary table, and then resume whatever you were doing before the command was invoked.
+If this command was triggered mid-task, create the task, show the brief confirmation, then resume whatever you were doing before.
