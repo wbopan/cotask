@@ -807,6 +807,10 @@
           <label>Acceptance Criteria</label>
           <textarea id="mAc" placeholder="Testable, implementation-agnostic..." rows="2"></textarea>
         </div>
+        <div class="form-group">
+          <label>Completion Memo</label>
+          <textarea id="mCm" placeholder="What was done, decisions made, risks found..." rows="2"></textarea>
+        </div>
       `, () => {
         const title = $('mTitle').value.trim();
         if (!title) return;
@@ -818,6 +822,7 @@
           slug: $('mSlug').value.trim().replace(/^#/, ''),
           desc: $('mDesc').value.trim(),
           ac: $('mAc').value.trim(),
+          cm: $('mCm').value.trim(),
           status: selStatus ? selStatus.dataset.status : defaultStatus,
           sectionId: selSection.id
         });
