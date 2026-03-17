@@ -1,0 +1,40 @@
+# Contributing to Octask
+
+Thanks for your interest in contributing!
+
+## Setup
+
+```bash
+# Clone the repo
+git clone https://github.com/anthropics/octask.git
+cd octask
+
+# Install server dependencies
+cd server && npm install --production
+
+# Start the dashboard with hot reload
+node --watch server/server.js
+```
+
+The dashboard runs at `http://localhost:3847`.
+
+## Project Structure
+
+- `server/` — Express server and dashboard assets (HTML/CSS/JS, no build step)
+- `skills/octask/` — TASKS.md skill spec and template
+- `commands/` — Slash command definitions (`/dashboard`, `/starting-task`, `/creating-task`)
+- `hooks/` — Lifecycle hooks (heartbeat reporting)
+- `scripts/` — Helper scripts (start server, sync to cache)
+- `evals/` — Eval suite for skill behavior testing
+
+## Development
+
+- Run `./scripts/start-server.sh` to start the server (idempotent).
+- Run `claude evals run evals/evals.json` to run evals.
+- The dashboard is plain HTML/CSS/JS — edit files in `server/assets/` and reload.
+
+## Pull Requests
+
+- Keep changes focused — one concern per PR.
+- Follow existing code style (no linter configured yet, just match what's there).
+- If you change the TASKS.md convention, update `skills/octask/SKILL.md` and the eval fixtures.

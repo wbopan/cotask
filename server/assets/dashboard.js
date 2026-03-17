@@ -178,7 +178,7 @@
           const slugMatch = rawTitle.match(/^(.+?)\s+#([\w-]+)$/);
           const titleText = slugMatch ? slugMatch[1].trim() : rawTitle;
           const slug = slugMatch ? slugMatch[2] : '';
-          currentTask = { id: uid(), title: titleText, slug, desc: '', ac: '', status, sectionId: currentSection.id };
+          currentTask = { id: uid(), title: titleText, slug, desc: '', ac: '', cm: '', status, sectionId: currentSection.id };
           descLines = [];
           continue;
         }
@@ -212,14 +212,18 @@
     }
 
     function flushTask(task, descLines) {
-      const full = descLines.join('\n').trim();
+      let full = descLines.join('\n').trim();
       const acMatch = full.match(/^-?\s*AC:\s*(.+)$/m);
       if (acMatch) {
         task.ac = acMatch[1].trim();
-        task.desc = full.replace(/^-?\s*AC:\s*.+$/m, '').replace(/\n{2,}/g, '\n').trim();
-      } else {
-        task.desc = full;
+        full = full.replace(/^-?\s*AC:\s*.+$/m, '');
       }
+      const cmMatch = full.match(/^-?\s*CM:\s*(.+)$/m);
+      if (cmMatch) {
+        task.cm = cmMatch[1].trim();
+        full = full.replace(/^-?\s*CM:\s*.+$/m, '');
+      }
+      task.desc = full.replace(/\n{2,}/g, '\n').trim();
     }
 
     // ===== SERIALIZE =====
@@ -233,6 +237,7 @@
         section.tasks.forEach(t => {
           md += `- ${STATUS_SYMBOLS[t.status] || '[ ]'} ${t.title}${t.slug ? ' #' + t.slug : ''}\n`;
           if (t.desc) t.desc.split('\n').forEach(l => { md += `    ${l}\n`; });
+          if (t.cm) md += `    CM: ${t.cm}\n`;
           if (t.ac) md += `    AC: ${t.ac}\n`;
         });
       });
@@ -569,6 +574,15 @@
         card.appendChild(ac);
       }
 
+      // CM
+      if (task.cm) {
+        const cm = document.createElement('div');
+        cm.className = 'task-card-cm';
+        cm.innerHTML = `<span class="cm-label">CM</span>${escapeHtml(task.cm)}`;
+        cm.addEventListener('click', (e) => { e.stopPropagation(); openEditTaskModal(task, section); });
+        card.appendChild(cm);
+      }
+
       // Session status dot (ongoing tasks only)
       if (task.status === 'ongoing') {
         const key = task.slug ? task.slug.replace(/^#/, '') : null;
@@ -831,6 +845,10 @@
           <label>Acceptance Criteria</label>
           <textarea id="mAc" rows="3">${escapeHtml(task.ac)}</textarea>
         </div>
+        <div class="form-group">
+          <label>Completion Memo</label>
+          <textarea id="mCm" rows="2">${escapeHtml(task.cm)}</textarea>
+        </div>
       `, () => {
         const title = $('mTitle').value.trim();
         if (!title) return;
@@ -840,6 +858,7 @@
         task.status = selStatus ? selStatus.dataset.status : task.status;
         task.desc = $('mDesc').value.trim();
         task.ac = $('mAc').value.trim();
+        task.cm = $('mCm').value.trim();
 
         // Handle section move
         if (hasNamedSections && $('mSection')) {

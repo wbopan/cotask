@@ -8,8 +8,6 @@ Task Management 技能的任务跟踪 — 一个看板 dashboard，用于维护 
     当前"拖到 section header 上方进入 default section"的判定是独立于卡片排序的特殊逻辑，识别不够精准。应统一为同一套位置检测：应该把 section Head 和卡片视为同一种东西
     CM: 提取共享 findDropPosition() 将 header 和 card 作为平等项扫描；drop-before-header 正确映射到前一个 section；drop zone 扩展到整列（含 column header）解决无法拖到 __default 的问题；底部 indicator 贴合最后一个卡片；FLIP 动画统一用 data-flip-key 单循环。净减约 50 行。
     AC: 拖拽跨 section 移动与同 section 内排序使用同一套位置检测逻辑；拖到列顶部（第一个 section header 之上）能正确归入 default section；无额外的特殊分支代码。
-## 核心基础设施
-
 - [x] 任务创建与编辑 UI #task-create-edit-ui
     - 用 modal 或 inline UI 创建新任务，支持标题、描述、AC、阶段选择和 slug 自动生成。
     AC: 用户可从 dashboard 直接创建和编辑任务，无需手动编辑 markdown 文件。
@@ -25,11 +23,9 @@ Task Management 技能的任务跟踪 — 一个看板 dashboard，用于维护 
 - [x] Session 心跳与状态展示 #session-heartbeat
     - Hook 发送心跳（包含 session 状态和 PID），server 通过 PID 存活检测实现即时检测已关闭的 session。
     AC: 活跃 session 显示正确状态（idle/running/permission）；已关闭的 session 通过 PID 检测立即识别。
-- [ ] 完善项目基础组织与开源规范 #project-housekeeping
+- [/] 完善项目基础组织与开源规范 #project-housekeeping
     补齐 .gitignore、LICENSE、CONTRIBUTING.md、README.md 等开源基础文件；建立语义化版本号（semver）管理流程，确保 plugin.json / package.json 版本一致且有明确的更新策略。
     AC: 项目包含正确的 .gitignore（覆盖 node_modules、.DS_Store 等）、LICENSE、CONTRIBUTING.md；版本号在 plugin.json 和 package.json 中一致且遵循 semver。
-## 打磨与可靠性
-
 - [x] 状态视觉重设计 #status-visual-redesign
     - 为每种状态设计独特颜色和 SVG 图标（蓝色播放=ongoing，琥珀色时钟=todo，绿色勾选=done，石板色归档=backlog），替换统一圆点。
     AC: 每种状态有独特的颜色和图标，在 dashboard 各处一眼可辨。
@@ -81,14 +77,10 @@ Task Management 技能的任务跟踪 — 一个看板 dashboard，用于维护 
     将整个项目中的 "Phase" 和 "phase-gate" 概念替换为可选的 "Section" 分组。`##` 标题变为普通分区标题（无需 "Phase N:" 前缀），TASKS.md 允许没有任何 section（任务直接在顶级列表）。涉及 SKILL.md、template、dashboard 解析器/渲染器、commands、plugin 描述、evals 等 13 个文件。
     CM: 全量重命名 phase→section 跨 13+ 文件：SKILL.md 移除 phase-gate 叙事改为可选 sections；Goal:→Description:；template 简化为无 section 默认形式；dashboard parser 支持 __default section（## 之前的 tasks）；serializer 对 default section 不输出 ## header；sidebar 在无 named section 时隐藏列表；拖拽支持 drop above first section header → default section；drop indicator 改为 height:0 + ::after 避免布局闪烁；commands/evals/plugin descriptions 同步更新。
     AC: 所有用户可见处不再出现 "phase" 或 "phase-gate"；TASKS.md 支持无 section 的扁平任务列表；dashboard 正确解析和渲染两种格式。
-- [/] Dashboard 动画效果优化 #dashboard-animations
+- [x] Dashboard 动画效果优化 #dashboard-animations
     优化 dashboard 的过渡动画：(1) 切换项目时任务卡片有淡入淡出效果；(2) 外部文件变更导致任务消失/出现时有过渡动画；(3) Done 列隐藏/显示时卡片有收起/展开动画。
+    CM: 外部文件变更：新卡片 card-enter 动画（translateY+scale+opacity），已有卡片 FLIP 位移。Done 列：max-height+opacity CSS 过渡替代 display:none。项目切换：per-project 缓存 sections 和 sessionMap 实现零延迟切换，sidebar .project-expanded 淡入。5 秒 session 轮询改为只 renderBoard 避免打断动画。Usage API 轮询改为 15 分钟。
     AC: 项目切换时卡片有平滑的淡入淡出过渡；外部文件变更刷新时任务的增减有视觉过渡；Done 列折叠展开有动画而非瞬间切换。
-- [-] 迁移到现代技术栈 #modernize-stack
-    将运行时从 Node.js + npm 迁移到 Bun，利用其内置 bundler、test runner 和更快的启动速度。移除 Express 依赖，改用 Bun 原生 HTTP server。更新 package.json scripts、post-install hook 和 CI 配置。
-    AC: 项目使用 Bun 运行和安装依赖；server 启动正常且功能不变；不再依赖 node/npm。
-## 快捷命令
-
 - [x] `/creating-task` 命令 #cmd-creating-task
     作为 `task-management:creating-task` 子技能。快速创建任务或分区到当前项目的 TASKS.md。接受标题和可选的分区/描述/AC 参数，自动生成 slug，插入到正确的 section 位置。创建 section 时生成 Description 段落。如果当前正在做这件事，直接标记为 `[/]`。Skill description 要"pushy"以确保触发率。
     CM: 创建 `commands/creating-task.md`。默认状态为 backlog，用户要求立即执行时标记 ongoing。包含重复检测、无 TASKS.md 时从模板 bootstrap、section 创建时建议最小任务集、表格式确认输出、中途触发后恢复先前工作。通过 skill-creator 流程迭代优化。
@@ -116,9 +108,16 @@ Task Management 技能的任务跟踪 — 一个看板 dashboard，用于维护 
 - [x] 全局 CLI 工具 #global-cli-tool
     使得技能在安装以后会暴露一个 pgdashboard 命令，运行这个命令就可以启动 dashboard 服务器
     AC: 在 claude 完成安装以后，pgdashboard 命令存在并且可以正确启动服务器。
+- [x] 拆分大文件优化代码结构 #split-large-files
+    当前项目最大的文件（dashboard.html ~2300 行、server.js）过长，难以维护和 AI 编辑。拆分为更合理的模块结构，如将 dashboard 的 CSS、parser、renderer、drag-drop 等逻辑分离。
+    CM: 将 dashboard.html（2466 行）拆为三个文件：dashboard.html（99 行，HTML 结构）、dashboard.css（1121 行，样式）、dashboard.js（1243 行，逻辑）。使用绝对路径 `/assets/` 引用外部资源，Express 静态中间件自动服务。无需构建步骤。
+    AC: 最长文件不超过合理阈值；拆分后功能不变；模块间接口清晰。
+- [-] 迁移到现代技术栈 #modernize-stack
+    将运行时从 Node.js + npm 迁移到 Bun，利用其内置 bundler、test runner 和更快的启动速度。移除 Express 依赖，改用 Bun 原生 HTTP server。更新 package.json scripts、post-install hook 和 CI 配置。
+    AC: 项目使用 Bun 运行和安装依赖；server 启动正常且功能不变；不再依赖 node/npm。
+- [ ] 卡片渲染增加 CM 字段展示 #render-cm-on-card
+    类似 AC 的渲染方式，在任务卡片上也展示 CM（Completion Memo）字段。包括解析器提取 CM:、序列化器输出 CM:、卡片渲染绿色 CM 标签、编辑 modal 增加 CM 字段。
+    AC: 含有 CM: 行的任务在 dashboard 卡片上显示绿色 CM 标签和内容；编辑 modal 可编辑 CM 字段；序列化后 CM: 行保留在 TASKS.md 中。
 - [ ] 拆分 marketplace 和插件为独立仓库 #split-marketplace-repo
     当前 marketplace 配置和插件代码混在同一仓库。拆为两个独立 repo：一个是插件本体（代码、skill、commands），另一个是 marketplace registry（marketplace.json、发布元数据）。插件 repo 通过 git URL 被 marketplace 引用。
     AC: 插件代码和 marketplace 配置分别在两个独立 git 仓库中维护；marketplace repo 通过 URL 引用插件 repo；两边可独立发版。
-- [/] 拆分大文件优化代码结构 #split-large-files
-    当前项目最大的文件（dashboard.html ~2300 行、server.js）过长，难以维护和 AI 编辑。拆分为更合理的模块结构，如将 dashboard 的 CSS、parser、renderer、drag-drop 等逻辑分离。
-    AC: 最长文件不超过合理阈值；拆分后功能不变；模块间接口清晰。
