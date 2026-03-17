@@ -38,7 +38,7 @@ The plugin is discovered via `.claude-plugin/plugin.json`. It registers:
 Single-file Express server (ESM, port 3847). No build step.
 
 - **Project discovery**: Scans `~/.claude/projects/`, reads `.jsonl` session files to extract `cwd`, encodes paths with `encodeProjectPath()`, checks for `TASKS.md` existence.
-- **Dashboard**: `server/assets/dashboard.html` is a self-contained ~75KB SPA (inline CSS + JS). Served at `/project/:projectId` with injected `window.__projectId`.
+- **Dashboard**: `server/assets/dashboard.html` + `dashboard.css` + `dashboard.js` — no build step. Served at `/project/:projectId` with injected `window.__projectId`.
 - **SSE file watch**: `/api/watch/:projectId` uses `fs.watch()` on the project directory (not the file directly) to survive atomic writes on macOS. 300ms debounce.
 - **Session liveness**: In-memory `heartbeats` Map, keyed by sessionId. `/api/sessions/:projectId` greps `.jsonl` for `custom-title` events, then checks PID liveness via `process.kill(pid, 0)`.
 - **Usage proxy**: `/api/usage` reads OAuth token from macOS keychain (`security find-generic-password`), proxies to Anthropic's usage API with 2-minute TTL cache.
@@ -46,7 +46,7 @@ Single-file Express server (ESM, port 3847). No build step.
 
 ### Dashboard SPA (`server/assets/dashboard.html`)
 
-All-in-one file, no framework or build tooling. Key internals:
+Three files (HTML structure, CSS, JS), no framework or build tooling. Key internals:
 
 - **Parser** (`parseTasksMd`): Line-by-line state machine parsing `## Section` headers, `Description:` lines, and `- [status] Title #slug` task items with indented description/AC.
 - **Serializer** (`toMarkdown`): Reconstructs TASKS.md from the in-memory model, preserving preamble text.
