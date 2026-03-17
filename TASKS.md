@@ -133,7 +133,7 @@ Task Management 技能的任务跟踪 — 一个看板 dashboard，用于维护 
     sdsdsd
     CM: 当前仍未完全修复：新增第三行 AC 或修改第二行时，保存到 TASKS.md 后内容会丢失/无法稳定持久化（仅部分行看得见，或刷新后恢复旧内容）。
     AC: 创建一个测试任务，具有两行的 AC。在 dashboard 当中可以正确的渲染和编辑，储存以后 AC的结构依然保留.
-- [ ] 卡片悬浮操作按钮重设计 #card-hover-actions-redesign
+- [x] 卡片悬浮操作按钮重设计 #card-hover-actions-redesign
     重新设计卡片操作交互：hover 时整张卡片模糊化，浮现三个大按钮（终端打开、复制 ID、删除）。终端按钮根据 session 状态有不同行为：活跃 session → 聚焦 Ghostty tab；无活跃但有历史 session → 复制 `cd {path} && claude resume {id}`；无 session → 复制 `cd {path} && claude "/rename {slug}"`。删除按钮需确认弹窗。替换当前右上角的小图标按钮。
     AC: hover 卡片时背景模糊并显示三个操作按钮；终端按钮根据 session 状态执行对应操作；删除按钮点击后弹出确认弹窗；复制 ID 按钮复制任务 slug 到剪贴板。
 - [-] Dashboard UI 无法创建新任务 #fix-dashboard-create-task

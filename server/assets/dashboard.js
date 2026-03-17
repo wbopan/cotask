@@ -147,6 +147,69 @@
       }
     }
 
+    function getTaskSession(task) {
+      if (!task?.slug) return null;
+      const key = task.slug.replace(/^#/, '');
+      return sessionMap[key] || sessionMap['#' + key] || null;
+    }
+
+    function getCurrentProjectPath() {
+      const current = allProjects.find(p => p.id === projectId);
+      return current?.path || '';
+    }
+
+    function shellQuote(value) {
+      return `'${String(value).replace(/'/g, `'\\''`)}'`;
+    }
+
+    function quoteForRename(value) {
+      return String(value || '').replace(/"/g, '\\"');
+    }
+
+    function flashButton(button, color = 'var(--status-done)') {
+      if (!button) return;
+      button.style.color = color;
+      button.style.borderColor = color;
+      setTimeout(() => {
+        button.style.color = '';
+        button.style.borderColor = '';
+      }, 800);
+    }
+
+    async function copyToClipboard(text, button, successMessage = 'Copied') {
+      if (!text) return showStatus('Nothing to copy', true);
+      try {
+        await navigator.clipboard.writeText(text);
+        flashButton(button);
+        showStatus(successMessage);
+      } catch {
+        showStatus('Failed to copy to clipboard', true);
+      }
+    }
+
+    async function handleTerminalAction(task, button) {
+      const slug = task?.slug ? task.slug.replace(/^#/, '') : '';
+      const projectPath = getCurrentProjectPath();
+      const session = getTaskSession(task);
+
+      if (session && ['running', 'idle', 'permission'].includes(session.status)) {
+        const title = slug || task?.title || '';
+        await focusGhosttyTab(title);
+        flashButton(button, 'var(--status-ongoing)');
+        return;
+      }
+
+      if (!slug) return showStatus('Task has no ID', true);
+      if (!projectPath) return showStatus('Project path unavailable', true);
+
+      const base = `cd ${shellQuote(projectPath)} && `;
+      const cmd = session
+        ? `${base}claude resume ${shellQuote(session.sessionId || slug)}`
+        : `${base}claude "/rename ${quoteForRename(slug)}"`;
+
+      await copyToClipboard(cmd, button, session ? 'Resume command copied' : 'Rename command copied');
+    }
+
     function escapeHtml(text) {
       const d = document.createElement('div');
       d.textContent = text || '';
@@ -553,38 +616,55 @@
       card.dataset.sectionId = section.id;
       card.dataset.flipKey = 'c-' + task.id;
 
+      const content = document.createElement('div');
+      content.className = 'task-card-content';
+
       // Actions
       const actions = document.createElement('div');
       actions.className = 'task-card-actions';
-      if (task.status === 'ongoing') {
-        const key = task.slug ? task.slug.replace(/^#/, '') : null;
-        const session = key ? (sessionMap[key] || sessionMap['#' + key]) : null;
-        if (session && ['running', 'idle', 'permission'].includes(session.status)) {
-          const ghostBtn = document.createElement('button');
-          ghostBtn.className = 'ghostty-btn';
-          ghostBtn.innerHTML = '<i data-lucide="ghost"></i>';
-          ghostBtn.title = 'Focus in Ghostty';
-          ghostBtn.addEventListener('click', (e) => {
-            e.stopPropagation();
-            focusGhosttyTab(key);
-          });
-          actions.appendChild(ghostBtn);
-        }
+
+      const terminalBtn = document.createElement('button');
+      terminalBtn.className = 'terminal-btn';
+      terminalBtn.innerHTML = '<i data-lucide="ghost"></i>';
+      terminalBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        handleTerminalAction(task, terminalBtn);
+      });
+      actions.appendChild(terminalBtn);
+
+      const session = getTaskSession(task);
+      if (session && ['running', 'idle', 'permission'].includes(session.status)) {
+        terminalBtn.classList.add('terminal-active');
+        terminalBtn.title = 'Open running session in Ghostty';
+      } else if (session) {
+        terminalBtn.classList.add('terminal-history');
+        terminalBtn.title = 'Copy resume command';
+      } else {
+        terminalBtn.classList.add('terminal-no-session');
+        terminalBtn.title = 'Copy rename command';
       }
+
       if (task.slug) {
         const copyBtn = document.createElement('button');
+        copyBtn.className = 'copy-id-btn';
         copyBtn.innerHTML = '<i data-lucide="copy"></i>';
         copyBtn.title = 'Copy ID';
         copyBtn.addEventListener('click', (e) => {
           e.stopPropagation();
-          navigator.clipboard.writeText(task.slug);
-          copyBtn.style.color = 'var(--status-done)';
-          copyBtn.style.borderColor = 'var(--status-done)';
-          setTimeout(() => { copyBtn.style.color = ''; copyBtn.style.borderColor = ''; }, 800);
+          copyToClipboard(task.slug, copyBtn, 'Task ID copied');
         });
         actions.appendChild(copyBtn);
+      } else {
+        const copyBtn = document.createElement('button');
+        copyBtn.className = 'copy-id-btn';
+        copyBtn.innerHTML = '<i data-lucide="copy"></i>';
+        copyBtn.disabled = true;
+        copyBtn.title = 'No task ID';
+        actions.appendChild(copyBtn);
       }
+
       const delBtn = document.createElement('button');
+      delBtn.className = 'delete-btn';
       delBtn.innerHTML = '<i data-lucide="x"></i>';
       delBtn.title = 'Delete';
       delBtn.addEventListener('click', (e) => { e.stopPropagation(); deleteTask(task, section); });
@@ -596,7 +676,7 @@
       title.className = `task-card-title ${task.status === 'done' ? 'crossed' : ''}`;
       title.textContent = task.title;
       title.addEventListener('click', (e) => { e.stopPropagation(); openEditTaskModal(task, section); });
-      card.appendChild(title);
+      content.appendChild(title);
 
       // Description
       if (task.desc) {
@@ -604,7 +684,7 @@
         desc.className = 'task-card-desc';
         desc.textContent = task.desc;
         desc.addEventListener('click', (e) => { e.stopPropagation(); openEditTaskModal(task, section); });
-        card.appendChild(desc);
+        content.appendChild(desc);
       }
 
       // AC
@@ -613,7 +693,7 @@
         ac.className = 'task-card-ac';
         ac.innerHTML = `<span class="ac-label">AC</span>${escapeMultilineHtml(task.ac)}`;
         ac.addEventListener('click', (e) => { e.stopPropagation(); openEditTaskModal(task, section); });
-        card.appendChild(ac);
+        content.appendChild(ac);
       }
 
       // CM
@@ -622,13 +702,11 @@
         cm.className = 'task-card-cm';
         cm.innerHTML = `<span class="cm-label">CM</span>${escapeMultilineHtml(task.cm)}`;
         cm.addEventListener('click', (e) => { e.stopPropagation(); openEditTaskModal(task, section); });
-        card.appendChild(cm);
+        content.appendChild(cm);
       }
 
       // Session status dot (ongoing tasks only)
       if (task.status === 'ongoing') {
-        const key = task.slug ? task.slug.replace(/^#/, '') : null;
-        const session = key ? (sessionMap[key] || sessionMap['#' + key]) : null;
         const dot = document.createElement('span');
         dot.className = 'session-dot';
         if (session) {
@@ -650,6 +728,8 @@
         }
         title.prepend(dot);
       }
+
+      card.appendChild(content);
 
       // Drag
       card.addEventListener('dragstart', (e) => {
@@ -757,6 +837,9 @@
 
     // ===== TASK OPERATIONS =====
     function deleteTask(task, section) {
+      const label = task.slug ? `${task.title} (#${task.slug})` : task.title;
+      if (!confirm(`Delete task ${label}?`)) return;
+
       const idx = section.tasks.findIndex(t => t.id === task.id);
       if (idx !== -1) {
         section.tasks.splice(idx, 1);

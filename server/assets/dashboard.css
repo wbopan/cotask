@@ -566,11 +566,23 @@
       transition: all 0.15s;
       box-shadow: var(--shadow-sm);
       position: relative;
+      overflow: hidden;
     }
 
     .task-card:hover {
       box-shadow: var(--shadow-md);
       border-color: var(--border);
+    }
+
+    .task-card-content {
+      position: relative;
+      transition: filter 0.18s ease, opacity 0.18s ease;
+      will-change: filter, opacity;
+    }
+
+    .task-card:hover .task-card-content {
+      filter: blur(1.6px);
+      opacity: 0.62;
     }
 
     .task-card.dragging {
@@ -710,52 +722,92 @@
     }
 
     .task-card-actions {
-      display: none;
       position: absolute;
-      top: 6px;
-      right: 6px;
-      gap: 3px;
-      align-items: center;
-    }
-
-    .task-card:hover .task-card-actions { display: flex; }
-
-    .task-card-actions button {
-      background: var(--bg-card);
-      border: 1px solid var(--border-light);
-      color: var(--text-muted);
-      cursor: pointer;
-      width: 24px;
-      height: 24px;
-      padding: 0;
-      line-height: 1;
-      border-radius: var(--radius-sm);
+      inset: 0;
+      margin: 0;
+      padding: 0 14px;
+      border-radius: var(--radius);
       display: flex;
       align-items: center;
       justify-content: center;
-      transition: all 0.15s ease;
+      gap: 10px;
+      opacity: 0;
+      pointer-events: none;
+      background: color-mix(in srgb, var(--bg-card) 56%, transparent);
+      backdrop-filter: blur(3px);
+      transition: opacity 0.18s ease;
+      z-index: 1;
+    }
+
+    .task-card:hover .task-card-actions {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .task-card-actions button {
+      background: rgba(255, 255, 255, 0.93);
+      border: 1px solid var(--border);
+      color: var(--text-muted);
+      cursor: pointer;
+      width: 42px;
+      height: 42px;
+      padding: 0;
+      line-height: 1;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.15s ease, transform 0.15s ease;
+      box-shadow: var(--shadow-sm);
+    }
+    .task-card-actions button[disabled] {
+      opacity: 0.32;
+      cursor: not-allowed;
+      pointer-events: none;
     }
     .task-card-actions button svg {
-      width: 13px;
-      height: 13px;
+      width: 21px;
+      height: 21px;
       flex-shrink: 0;
     }
     .task-card-actions button:hover {
       color: var(--accent);
-      border-color: var(--accent);
-      background: color-mix(in srgb, var(--accent) 6%, var(--bg-card));
+      border-color: color-mix(in srgb, var(--accent) 60%, var(--border));
+      background: color-mix(in srgb, var(--accent) 10%, #fff);
+      transform: translateY(-1px);
     }
 
-    /* Ghost (Ghostty focus) button — same size, tinted to stand out */
-    .task-card-actions button.ghostty-btn {
-      background: color-mix(in srgb, var(--status-ongoing) 8%, var(--bg-card));
-      border-color: color-mix(in srgb, var(--status-ongoing) 25%, var(--border-light));
+    .task-card-actions button.terminal-btn {
+      border-color: color-mix(in srgb, var(--status-ongoing) 35%, var(--border));
       color: var(--status-ongoing);
     }
-    .task-card-actions button.ghostty-btn:hover {
-      background: color-mix(in srgb, var(--status-ongoing) 15%, var(--bg-card));
-      border-color: var(--status-ongoing);
-      color: var(--status-ongoing);
+    .task-card-actions button.terminal-btn.terminal-active {
+      background: color-mix(in srgb, var(--status-ongoing) 14%, rgba(255, 255, 255, 0.93));
+    }
+    .task-card-actions button.terminal-btn.terminal-history {
+      color: var(--status-todo);
+      border-color: color-mix(in srgb, var(--status-todo) 35%, var(--border));
+      background: color-mix(in srgb, var(--status-todo) 8%, rgba(255, 255, 255, 0.93));
+    }
+    .task-card-actions button.terminal-btn.terminal-no-session {
+      color: var(--status-canceled);
+      border-color: color-mix(in srgb, var(--status-canceled) 35%, var(--border));
+      background: color-mix(in srgb, var(--status-canceled) 8%, rgba(255, 255, 255, 0.93));
+    }
+
+    .task-card-actions button.delete-btn {
+      color: var(--status-canceled);
+      border-color: color-mix(in srgb, var(--status-canceled) 35%, var(--border));
+    }
+    .task-card-actions button.delete-btn:hover {
+      color: #ef4444;
+      border-color: #ef4444;
+      background: color-mix(in srgb, #ef4444 10%, #fff);
+    }
+
+    .task-card-actions button:focus-visible {
+      outline: 2px solid color-mix(in srgb, var(--accent) 60%, transparent);
+      outline-offset: 1px;
     }
 
     .drop-indicator {
