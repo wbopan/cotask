@@ -26,8 +26,8 @@ claude plugins install octask@octask-marketplace
 ## Usage
 
 ```bash
-# Open the dashboard from terminal
-octask-dashboard
+# Open the dashboard (inside Claude Code)
+/dashboard
 
 # Start working on a task (inside Claude Code)
 /starting-task #my-task-slug

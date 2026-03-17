@@ -23,8 +23,9 @@ Task Management 技能的任务跟踪 — 一个看板 dashboard，用于维护 
 - [x] Session 心跳与状态展示 #session-heartbeat
     - Hook 发送心跳（包含 session 状态和 PID），server 通过 PID 存活检测实现即时检测已关闭的 session。
     AC: 活跃 session 显示正确状态（idle/running/permission）；已关闭的 session 通过 PID 检测立即识别。
-- [/] 完善项目基础组织与开源规范 #project-housekeeping
+- [x] 完善项目基础组织与开源规范 #project-housekeeping
     补齐 .gitignore、LICENSE、CONTRIBUTING.md、README.md 等开源基础文件；建立语义化版本号（semver）管理流程，确保 plugin.json / package.json 版本一致且有明确的更新策略。
+    CM: 添加 MIT LICENSE、README.md（含正确的 marketplace 安装流程）、CONTRIBUTING.md。CLAUDE.md 移至 .claude/。删除重复的 root marketplace.json。.gitignore 增加 TASKS.md 和 .claude/worktrees/。修复 plugin.json repo URL。CLI 从 pgdashboard 重命名为 octask-dashboard。版本号已一致（1.0.0）。
     AC: 项目包含正确的 .gitignore（覆盖 node_modules、.DS_Store 等）、LICENSE、CONTRIBUTING.md；版本号在 plugin.json 和 package.json 中一致且遵循 semver。
 - [x] 状态视觉重设计 #status-visual-redesign
     - 为每种状态设计独特颜色和 SVG 图标（蓝色播放=ongoing，琥珀色时钟=todo，绿色勾选=done，石板色归档=backlog），替换统一圆点。
@@ -115,9 +116,17 @@ Task Management 技能的任务跟踪 — 一个看板 dashboard，用于维护 
 - [-] 迁移到现代技术栈 #modernize-stack
     将运行时从 Node.js + npm 迁移到 Bun，利用其内置 bundler、test runner 和更快的启动速度。移除 Express 依赖，改用 Bun 原生 HTTP server。更新 package.json scripts、post-install hook 和 CI 配置。
     AC: 项目使用 Bun 运行和安装依赖；server 启动正常且功能不变；不再依赖 node/npm。
+- [-] 拆分 marketplace 和插件为独立仓库 #split-marketplace-repo
+    当前 marketplace 配置和插件代码混在同一仓库。拆为两个独立 repo：一个是插件本体（代码、skill、commands），另一个是 marketplace registry（marketplace.json、发布元数据）。插件 repo 通过 git URL 被 marketplace 引用。
+    AC: 插件代码和 marketplace 配置分别在两个独立 git 仓库中维护；marketplace repo 通过 URL 引用插件 repo；两边可独立发版。
 - [ ] 卡片渲染增加 CM 字段展示 #render-cm-on-card
     类似 AC 的渲染方式，在任务卡片上也展示 CM（Completion Memo）字段。包括解析器提取 CM:、序列化器输出 CM:、卡片渲染绿色 CM 标签、编辑 modal 增加 CM 字段。
     AC: 含有 CM: 行的任务在 dashboard 卡片上显示绿色 CM 标签和内容；编辑 modal 可编辑 CM 字段；序列化后 CM: 行保留在 TASKS.md 中。
-- [ ] 拆分 marketplace 和插件为独立仓库 #split-marketplace-repo
-    当前 marketplace 配置和插件代码混在同一仓库。拆为两个独立 repo：一个是插件本体（代码、skill、commands），另一个是 marketplace registry（marketplace.json、发布元数据）。插件 repo 通过 git URL 被 marketplace 引用。
-    AC: 插件代码和 marketplace 配置分别在两个独立 git 仓库中维护；marketplace repo 通过 URL 引用插件 repo；两边可独立发版。
+- [ ] Allow Multiline AC and CM #fix-multiline-ac
+    - 现在的 AC 一个任务都只能出现一行，我们需要允许多行的 AC / CM，相当于允许有多个 acceptance criteria。具体方法就是多个 AC 开头的行。
+    - 同时 The description and acceptance criteria.  的文本管理都进行一个格式化。换行的时候总是增加一个 `- ` 来标记 bullet point. 如果没有的话，保存的时候也自动 format 增加一个
+    AC: - 创建一个测试任务，具有两行的 AC。在 dashboard 当中可以正确的渲染和编辑，储存以后 AC的结构依然保留. 如果添加内容没有 `- ` 保存到 task MD 文本当中的也是正确的 - AC: text with no duplicated `-`
+- [x] 去掉 cli 改成 claude 命令 #remove-dashboard
+    现在我们使用一个命令行工具来打开 dashboard。这个做法不太友好，正确的做法应该是增加一个 /dashboard 命令在 cc 中，然后这个命令让 CC 向用户呈现运行 dashboard 命令，或者建议让 claude 自己来运行，或者建议把它配置成一个一直运行的服务。
+    CM: 重写 /dashboard 命令为完整流程（检查端口→启动→打开浏览器→建议 PWA）。移除 post-install 的全局 CLI symlink。更新 SKILL.md、README、dashboard.js 的 octask-dashboard 引用为 /dashboard。
+    AC: 测试 skill：当用户发送 /dashboard 命令时，Claude 首先检查端口是否在运行，如果没有运行，就直接 nohup 启动（octask-dashboard）。Claude 告知用户已经在 localhost：port 上运行服务了，如果没有运行，可以使用 octask-dashboard 命令，然后使用 open 命令在浏览器直接打开这个 url，并建议用户将它保存成 PWA。

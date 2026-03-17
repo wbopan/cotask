@@ -31,7 +31,7 @@ The plugin is discovered via `.claude-plugin/plugin.json`. It registers:
 - **Hooks** (`hooks/hooks.json`): `heartbeat.sh` runs async on 6 lifecycle events (SessionStart, UserPromptSubmit, PostToolUse, Stop, Notification, SessionEnd), POSTing session state (`idle`/`running`/`permission`/`notfound`) to `localhost:3847/api/heartbeat`.
 - **Slash commands** (`commands/`): `/dashboard` starts the server and opens the browser; `/starting-task` finds a task by slug, marks it `[/]`, and begins execution.
 - **Skill** (`skills/octask/SKILL.md`): Defines the full TASKS.md convention — status symbols, AC rules, completion workflow. This is the source of truth for how AI should read/write TASKS.md.
-- **Post-install** (`hooks/post-install.sh`): Runs `npm install` in `server/` and symlinks `scripts/octask-dashboard.sh` to `~/.local/bin/octask-dashboard`.
+- **Post-install** (`hooks/post-install.sh`): Runs `npm install` in `server/` and downloads bundled UI assets.
 
 ### Server (`server/server.js`)
 
