@@ -139,7 +139,7 @@ When you finish working on a task, follow this sequence:
     - CM: Root cause was stale CSRF tokens after IdP redirect. Added token refresh on the callback route. Tested with Google, Okta, and Azure AD.
 ```
 
-When a task turns out to be unnecessary, superseded, or deferred, mark it `[-]` rather than deleting it. The record of "we decided not to do this now" is valuable context.
+When a task is deferred, mark it `[-]` rather than deleting it. Backlog items are recognized, worthwhile work that hasn't been pulled into the current focus yet — they're expected to be picked up later. If a task is truly obsolete or superseded, delete it — backlog is not a graveyard.
 
 ## Dashboard
 
