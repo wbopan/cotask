@@ -348,9 +348,10 @@ let cachedOAuthToken = null;
 let usageCache = { data: null, fetchedAt: 0 };
 const USAGE_CACHE_TTL = 2 * 60 * 1000; // 2 minutes
 
-function getOAuthToken() {
+function getOAuthToken(forceRefresh = false) {
   return new Promise((resolve, reject) => {
-    if (cachedOAuthToken) return resolve(cachedOAuthToken);
+    if (cachedOAuthToken && !forceRefresh) return resolve(cachedOAuthToken);
+    cachedOAuthToken = null;
     execFile('security', ['find-generic-password', '-s', 'Claude Code-credentials', '-w'], (err, stdout) => {
       if (err) return reject(err);
       try {
@@ -365,32 +366,48 @@ function getOAuthToken() {
   });
 }
 
+function fetchUsageFromAPI(token) {
+  return new Promise((resolve, reject) => {
+    const req = https.get('https://api.anthropic.com/api/oauth/usage', {
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'anthropic-beta': 'oauth-2025-04-20',
+      },
+    }, (resp) => {
+      let body = '';
+      resp.on('data', chunk => body += chunk);
+      resp.on('end', () => {
+        if (resp.statusCode === 200) {
+          resolve(JSON.parse(body));
+        } else {
+          const err = new Error(`API returned ${resp.statusCode}`);
+          err.statusCode = resp.statusCode;
+          reject(err);
+        }
+      });
+    });
+    req.on('error', reject);
+  });
+}
+
 app.get('/api/usage', async (req, res) => {
   const now = Date.now();
   if (usageCache.data && (now - usageCache.fetchedAt) < USAGE_CACHE_TTL) {
     return res.json(usageCache.data);
   }
   try {
-    const token = await getOAuthToken();
-    const result = await new Promise((resolve, reject) => {
-      const req = https.get('https://api.anthropic.com/api/oauth/usage', {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'anthropic-beta': 'oauth-2025-04-20',
-        },
-      }, (resp) => {
-        let body = '';
-        resp.on('data', chunk => body += chunk);
-        resp.on('end', () => {
-          if (resp.statusCode === 200) {
-            resolve(JSON.parse(body));
-          } else {
-            reject(new Error(`API returned ${resp.statusCode}`));
-          }
-        });
-      });
-      req.on('error', reject);
-    });
+    let token = await getOAuthToken();
+    let result;
+    try {
+      result = await fetchUsageFromAPI(token);
+    } catch (err) {
+      if (err.statusCode === 401 || err.statusCode === 429) {
+        token = await getOAuthToken(true);
+        result = await fetchUsageFromAPI(token);
+      } else {
+        throw err;
+      }
+    }
     usageCache = { data: result, fetchedAt: Date.now() };
     res.json(result);
   } catch (err) {
