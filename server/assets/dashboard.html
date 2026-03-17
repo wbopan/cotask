@@ -1010,6 +1010,69 @@
     .status-bar.error {
       background: #dc2626;
     }
+
+    /* Project list */
+    .project-list {
+      padding: 0;
+    }
+
+    .project-item {
+      padding: 8px 10px;
+      cursor: pointer;
+      transition: background 0.15s;
+      border-left: 3px solid transparent;
+      border-radius: 6px;
+      margin: 1px 0;
+    }
+
+    .project-item:hover { background: var(--bg-warm); }
+
+    .project-item.active {
+      background: var(--accent-light);
+      border-left-color: var(--accent);
+    }
+
+    .project-item-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 4px;
+    }
+
+    .project-item-name {
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--text);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      flex: 1;
+    }
+
+    .project-item-pct {
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--text-muted);
+      font-family: var(--mono);
+      margin-left: 8px;
+      flex-shrink: 0;
+    }
+
+    .project-mini-bar {
+      height: 4px;
+      background: var(--border-light);
+      border-radius: 2px;
+      overflow: hidden;
+      display: flex;
+    }
+
+    .project-mini-bar .done { background: var(--status-done); }
+    .project-mini-bar .ongoing { background: var(--status-ongoing); }
+
+    /* Active project expanded content */
+    .project-expanded {
+      padding-top: 8px;
+    }
   </style>
 </head>
 <body>
@@ -1048,18 +1111,13 @@
 
     <!-- SIDEBAR -->
     <div class="sidebar" id="sidebar" style="display:none;">
-      <!-- Progress + Phases -->
-      <div class="sidebar-card scrollable borderless">
+      <!-- Project List -->
+      <div class="sidebar-card scrollable borderless" id="projectListCard">
         <div class="sidebar-card-header">
-          <div class="sidebar-card-title normal-case" id="projectCardTitle">Progress</div>
-          <button class="add-phase-btn" id="addPhaseBtn" title="Add Phase">+</button>
+          <div class="sidebar-card-title">Projects</div>
+          <button class="add-phase-btn" id="addPhaseBtn" title="Add Section">+</button>
         </div>
-        <div class="global-stats" id="globalStats"></div>
-        <div class="global-progress">
-          <div class="global-progress-bar" id="globalBar"></div>
-          <span class="global-pct" id="globalPct">0%</span>
-        </div>
-        <div class="phase-list" id="phaseList"></div>
+        <div class="project-list" id="projectList"></div>
       </div>
 
       <!-- Usage Card (pinned to bottom) -->
@@ -1102,7 +1160,8 @@
 
   <script>
     // ===== STATE =====
-    const projectId = window.__projectId || null;
+    let projectId = window.__projectId || null;
+    let allProjects = []; // cached project list from /api/projects
     let preamble = '';
     let phases = [];
     let hasChanges = false;
@@ -1390,13 +1449,63 @@
       });
     }
 
+    function renderProjectList() {
+      const list = $('projectList');
+      list.innerHTML = '';
+
+      for (const proj of allProjects) {
+        const isActive = proj.id === projectId;
+        const item = document.createElement('div');
+        item.className = `project-item ${isActive ? 'active' : ''}`;
+
+        const total = proj.stats.total || 1;
+        const donePct = Math.round((proj.stats.done / total) * 100);
+
+        let html = `
+          <div class="project-item-header">
+            <span class="project-item-name">${escapeHtml(proj.name)}</span>
+            <span class="project-item-pct">${donePct}%</span>
+          </div>
+          <div class="project-mini-bar">
+            <div class="done" style="width:${(proj.stats.done/total)*100}%"></div>
+            <div class="ongoing" style="width:${(proj.stats.ongoing/total)*100}%"></div>
+          </div>
+        `;
+
+        if (isActive) {
+          // Add expanded content for active project — globalStats/globalBar/globalPct/phaseList
+          // will be filled in by the rest of renderSidebar()
+          html += `<div class="project-expanded">
+            <div class="global-stats" id="globalStats"></div>
+            <div class="global-progress">
+              <div class="global-progress-bar" id="globalBar"></div>
+              <span class="global-pct" id="globalPct">0%</span>
+            </div>
+            <div class="phase-list" id="phaseList"></div>
+          </div>`;
+        }
+
+        item.innerHTML = html;
+
+        if (!isActive) {
+          item.addEventListener('click', () => switchProject(proj.id));
+        }
+
+        list.appendChild(item);
+      }
+    }
+
     function renderSidebar() {
+      renderProjectList();
+
       const all = allTasks();
       const counts = countByStatus(all);
       const total = all.length;
 
-      // Global stats
-      $('globalStats').innerHTML = STATUS_ORDER.map(st =>
+      // Global stats (inside active project's expanded area)
+      const globalStatsEl = $('globalStats');
+      if (!globalStatsEl) return; // no active project expanded area yet
+      globalStatsEl.innerHTML = STATUS_ORDER.map(st =>
         `<div class="global-stat">${statusIcon(st)}<span class="num">${counts[st]}</span></div>`
       ).join('');
 
@@ -2084,6 +2193,13 @@
       `;
     }
 
+    async function fetchProjects() {
+      try {
+        const res = await fetch('/api/projects');
+        if (res.ok) allProjects = await res.json();
+      } catch {}
+    }
+
     async function loadProject({ silent = false } = {}) {
       if (!projectId) return;
       try {
@@ -2107,11 +2223,23 @@
 
         phases = parsed;
 
+        // Update allProjects entry with accurate stats from parsed phases
+        const allParsed = phases.flatMap(p => p.tasks);
+        const parsedCounts = countByStatus(allParsed);
+        const activeEntry = allProjects.find(p => p.id === projectId);
+        if (activeEntry) {
+          activeEntry.stats = {
+            todo: parsedCounts.todo,
+            ongoing: parsedCounts.ongoing,
+            done: parsedCounts.done,
+            backlog: parsedCounts.canceled,
+            total: allParsed.length,
+          };
+        }
+
         $('emptyState').style.display = 'none';
         $('sidebar').style.display = 'flex';
         $('boardArea').style.display = 'flex';
-        const projName = window.__projectName || projectId || 'TASKS.md';
-        $('projectCardTitle').textContent = 'Project: ' + projName;
 
         lastCleanSnapshot = takeSnapshot();
         undoStack.length = 0;
@@ -2175,6 +2303,33 @@
       loadProject();
     });
 
+    async function switchProject(newProjectId) {
+      if (newProjectId === projectId) return;
+
+      // Disconnect old SSE watcher
+      if (fileWatchSource) { fileWatchSource.close(); fileWatchSource = null; }
+
+      // Reset state
+      projectId = newProjectId;
+      phases = [];
+      preamble = '';
+      hasChanges = false;
+      isSaving = false;
+      activePhaseId = null;
+      sessionMap = {};
+      undoStack.length = 0;
+      lastCleanSnapshot = null;
+      $('saveBtn').disabled = true;
+
+      // Update URL
+      history.pushState({}, '', '/project/' + encodeURIComponent(newProjectId));
+
+      // Load new project
+      await loadProject();
+      fetchSessions().then(render);
+      connectFileWatch();
+    }
+
     // Patch autoSave to suppress self-triggered watch events
     const _origAutoSave = autoSave;
     autoSave = async function() {
@@ -2182,13 +2337,23 @@
       selfSaveSuppress = Date.now() + 500;
     };
 
-    loadProject().then(() => {
-      fetchSessions().then(render);
-      setInterval(async () => { await fetchSessions(); render(); }, 5000);
-      setInterval(fetchUsage, 120000);
-      connectFileWatch();
+    fetchProjects().then(() => {
+      loadProject().then(() => {
+        fetchSessions().then(render);
+        setInterval(async () => { await fetchSessions(); render(); }, 5000);
+        setInterval(fetchUsage, 120000);
+        connectFileWatch();
+      });
     });
     $('saveBtn').addEventListener('click', autoSave);
+
+    window.addEventListener('popstate', () => {
+      const match = location.pathname.match(/^\/project\/(.+)/);
+      if (match) {
+        const newId = decodeURIComponent(match[1]);
+        if (newId !== projectId) switchProject(newId);
+      }
+    });
 
     window.addEventListener('beforeunload', (e) => {
       if (fileWatchSource) fileWatchSource.close();
