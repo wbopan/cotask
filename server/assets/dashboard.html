@@ -1491,29 +1491,17 @@
       el.addEventListener('transitionend', () => { el.style.transition = ''; }, { once: true });
     }
 
-    function colIdx(el) {
-      const col = el.closest('.status-column');
-      return col ? [...col.parentElement.children].indexOf(col) : 0;
-    }
-
     function animatedRender(skipTaskId) {
       const oldRects = new Map();
-      document.querySelectorAll('.task-card').forEach(c => {
-        oldRects.set('c-' + c.dataset.taskId, c.getBoundingClientRect());
-      });
-      document.querySelectorAll('.section-group-header').forEach(h => {
-        oldRects.set('h-' + colIdx(h) + '-' + h.textContent.trim(), h.getBoundingClientRect());
+      document.querySelectorAll('[data-flip-key]').forEach(el => {
+        oldRects.set(el.dataset.flipKey, el.getBoundingClientRect());
       });
       render();
       const spring = 'cubic-bezier(0.22, 1, 0.36, 1)';
-      document.querySelectorAll('.task-card').forEach(c => {
-        if (skipTaskId != null && c.dataset.taskId === String(skipTaskId)) return;
-        const old = oldRects.get('c-' + c.dataset.taskId);
-        if (old) flipAnimate(c, old, spring);
-      });
-      document.querySelectorAll('.section-group-header').forEach(h => {
-        const old = oldRects.get('h-' + colIdx(h) + '-' + h.textContent.trim());
-        if (old) flipAnimate(h, old, spring);
+      document.querySelectorAll('[data-flip-key]').forEach(el => {
+        if (skipTaskId != null && el.dataset.taskId === String(skipTaskId)) return;
+        const old = oldRects.get(el.dataset.flipKey);
+        if (old) flipAnimate(el, old, spring);
       });
     }
 
@@ -1710,6 +1698,7 @@
             const sHeader = document.createElement('div');
             sHeader.className = 'section-group-header';
             sHeader.textContent = section.name;
+            sHeader.dataset.flipKey = `h-${status}-${section.id}`;
             sectionEl.appendChild(sHeader);
           }
 
@@ -1734,6 +1723,7 @@
       card.draggable = true;
       card.dataset.taskId = task.id;
       card.dataset.sectionId = section.id;
+      card.dataset.flipKey = 'c-' + task.id;
 
       // Actions
       const actions = document.createElement('div');
@@ -1839,53 +1829,26 @@
       return card;
     }
 
+    // Unified hit-testing: headers and cards are equal items in one flat scan
+    function findDropPosition(body, clientY) {
+      for (const item of body.querySelectorAll('.section-group-header, .task-card:not(.dragging)')) {
+        const r = item.getBoundingClientRect();
+        if (clientY < r.top + r.height / 2) return item;
+      }
+      return null;
+    }
+
     function setupColumnDropZone(body, status) {
       body.addEventListener('dragover', (e) => {
         e.preventDefault();
         body.classList.add('drag-over');
-
-        // Show indicator
         body.querySelectorAll('.drop-indicator').forEach(el => el.remove());
-        const cards = [...body.querySelectorAll('.task-card:not(.dragging)')];
 
-        // Find which section group the cursor is over
-        const sectionEls = [...body.querySelectorAll('.section-group')];
-        let dropTarget = null;
-        for (const s of sectionEls) {
-          const r = s.getBoundingClientRect();
-          if (e.clientY >= r.top && e.clientY <= r.bottom) { dropTarget = s; break; }
-        }
-
-        // If above the first section group, mark as "drop to unsectioned"
-        let dropToDefault = false;
-        if (!dropTarget && sectionEls.length > 0) {
-          const firstEl = sectionEls[0];
-          if (e.clientY < firstEl.getBoundingClientRect().top) {
-            dropToDefault = true;
-          }
-        }
-
-        // Find card to insert before (only within the target section if known)
-        const searchCards = dropTarget
-          ? cards.filter(c => dropTarget.contains(c))
-          : cards;
-        let insertBefore = null;
-        for (const c of searchCards) {
-          const r = c.getBoundingClientRect();
-          if (e.clientY < r.top + r.height / 2) { insertBefore = c; break; }
-        }
-
+        const insertBefore = findDropPosition(body, e.clientY);
         const indicator = document.createElement('div');
         indicator.className = 'drop-indicator';
-        if (dropToDefault) {
-          body.prepend(indicator);
-        } else if (insertBefore) {
-          insertBefore.before(indicator);
-        } else if (dropTarget) {
-          dropTarget.appendChild(indicator);
-        } else {
-          body.appendChild(indicator);
-        }
+        if (insertBefore) insertBefore.before(indicator);
+        else body.appendChild(indicator);
       });
 
       body.addEventListener('dragleave', (e) => {
@@ -1908,74 +1871,45 @@
           if (taskIdx === -1) return;
           const task = srcSection.tasks[taskIdx];
 
-          // Update status to match target column
           task.status = status;
-
-          // Find position: which section group and card to insert before
-          const cards = [...body.querySelectorAll('.task-card:not(.dragging)')];
-          const sectionEls = [...body.querySelectorAll('.section-group')];
-          let dropTarget = null;
-          for (const s of sectionEls) {
-            const r = s.getBoundingClientRect();
-            if (e.clientY >= r.top && e.clientY <= r.bottom) { dropTarget = s; break; }
-          }
-
-          // If above the first section group, drop into default (unsectioned) area
-          let dropToDefault = false;
-          if (!dropTarget && sectionEls.length > 0) {
-            const firstEl = sectionEls[0];
-            if (e.clientY < firstEl.getBoundingClientRect().top) {
-              dropToDefault = true;
-            }
-          }
-
-          const searchCards = dropTarget
-            ? cards.filter(c => dropTarget.contains(c))
-            : cards;
-          let beforeCard = null;
-          for (const c of searchCards) {
-            const r = c.getBoundingClientRect();
-            if (e.clientY < r.top + r.height / 2) { beforeCard = c; break; }
-          }
-
-          // Remove from source section
           srcSection.tasks.splice(taskIdx, 1);
 
-          // Helper: get or create the default section
-          function getDefaultSection() {
-            let def = sections.find(s => s.id === '__default');
-            if (!def) {
-              def = { id: '__default', name: '', description: '', tasks: [] };
-              sections.unshift(def);
-            }
-            return def;
-          }
+          const insertBefore = findDropPosition(body, e.clientY);
+          const allGroups = [...body.querySelectorAll('.section-group')];
 
-          if (dropToDefault) {
-            getDefaultSection().tasks.push(task);
-          } else if (beforeCard) {
-            const bSectionId = beforeCard.dataset.sectionId;
-            const bTaskId = parseFloat(beforeCard.dataset.taskId);
-            const dstSection = sections.find(s => s.id === bSectionId);
+          if (insertBefore && insertBefore.classList.contains('task-card')) {
+            // Insert before a card → same section as that card, before it
+            const dstSection = sections.find(s => s.id === insertBefore.dataset.sectionId);
             if (dstSection) {
-              const bIdx = dstSection.tasks.findIndex(t => t.id == bTaskId);
-              if (bIdx !== -1) {
-                dstSection.tasks.splice(bIdx, 0, task);
-              } else {
-                dstSection.tasks.push(task);
-              }
+              const bIdx = dstSection.tasks.findIndex(t => t.id == parseFloat(insertBefore.dataset.taskId));
+              if (bIdx !== -1) dstSection.tasks.splice(bIdx, 0, task);
+              else dstSection.tasks.push(task);
             } else {
               srcSection.tasks.push(task);
             }
-          } else if (dropTarget) {
-            const dstSection = sections.find(s => s.id === dropTarget.dataset.sectionId);
-            if (dstSection) {
-              dstSection.tasks.push(task);
+          } else if (insertBefore) {
+            // Insert before a section header → end of the PREVIOUS section
+            const headerGroup = insertBefore.closest('.section-group');
+            const groupIdx = allGroups.indexOf(headerGroup);
+            if (groupIdx > 0) {
+              const prevId = allGroups[groupIdx - 1].dataset.sectionId;
+              const prevSection = sections.find(s => s.id === prevId);
+              if (prevSection) prevSection.tasks.push(task);
+              else srcSection.tasks.push(task);
             } else {
-              srcSection.tasks.push(task);
+              // Before the first header → __default section
+              let def = sections.find(s => s.id === '__default');
+              if (!def) {
+                def = { id: '__default', name: '', description: '', tasks: [] };
+                sections.unshift(def);
+              }
+              def.tasks.push(task);
             }
           } else {
-            srcSection.tasks.push(task);
+            // Below everything → append to last section
+            const lastId = allGroups[allGroups.length - 1]?.dataset.sectionId;
+            const dstSection = sections.find(s => s.id === lastId) || srcSection;
+            dstSection.tasks.push(task);
           }
 
           markChanged();
