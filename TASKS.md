@@ -151,9 +151,13 @@ Task Management 技能的任务跟踪 — 一个看板 dashboard，用于维护 
     Status 从文本行改为下拉选择菜单；Description、AC、CM 文本域增大编辑面积；整个编辑弹窗尺寸加大以容纳更多内容。
     CM: Status 改为带内联 SVG 图标的 select 下拉；ID 与 Status 合并为同一行；textarea rows 增大（desc 6-8, AC 5-6, CM 4）；modal 宽度 580→720px，高度 82→90vh；移除 setupStatusRow 及相关 CSS。
     AC: 编辑任务弹窗中 status 为下拉选择（四种状态）；description/AC/CM 输入框面积明显大于当前；弹窗整体宽高比当前更大。
-- [/] Dashboard 布局重构：双栏去顶栏 #dashboard-layout-rework
+- [x] Dashboard 布局重构：双栏去顶栏 #dashboard-layout-rework
     将 dashboard 从当前的顶部 header + 内容区布局改为纯双栏结构。移除顶部 header，将 logo 和 logo 文字移入左侧边栏顶部。去掉右上角的 New Task 和 Save 按钮，New Task 改为屏幕右下角的浮动圆形加号按钮（FAB）。
+    CM: 删除顶部 header 及其 CSS/JS 引用（saveBtn×6、globalAddTaskBtn）。新增 FAB 按钮（固定右下角圆形+号）。board-area 包入 board-wrapper，顶部 board-header 显示项目名 h1。移除列间分隔线。最后移除 sidebar 中的 logo 和品牌文字，保持纯净双栏布局。
     AC: 页面无顶部 header 栏；logo 和项目名在左侧边栏顶部；右下角有浮动圆形加号按钮可创建新任务；原 Save 按钮功能不丢失（自动保存即可）。
+- [ ] 视觉风格现代化：告别 amber 暖色调 #modernize-visual-style
+    将 dashboard 的整体视觉风格从当前的 amber/暖白色调（#f8f6f1 背景、#c4613c 强调色）切换为更现代、中性的配色方案。涉及 CSS 变量（--bg、--accent、--border 等）、卡片样式、状态颜色、FAB、进度条等全局视觉元素。
+    AC: dashboard 整体配色不再以 amber/暖橙为主；视觉风格更接近现代 SaaS 产品（如 Linear、Notion）；所有 UI 元素配色协调一致。
 - [-] AI 创建任务 #creating-task-ai
     使用 claude cli 来创建任务。
 - [/] 修复状态感知 #fix-state-sensing
