@@ -416,7 +416,7 @@
     .board-area {
       flex: 1;
       display: flex;
-      overflow-x: auto;
+      overflow-x: hidden;
       overflow-y: hidden;
       min-width: 0;
     }
