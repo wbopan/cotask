@@ -10,6 +10,7 @@
     let hideDone = localStorage.getItem('octask-hide-done') !== 'false';
     let healthPollTimer = null;
     let lastSessionSnapshot = null;
+    let lastSavedMarkdown = null;
 
     // Undo stack — stores snapshots taken before each mutation
     const undoStack = [];
@@ -1124,12 +1125,18 @@
 
     async function autoSave() {
       if (!projectId || !hasChanges || isSaving) return;
+      const md = toMarkdown();
+      if (md === lastSavedMarkdown) {
+        hasChanges = false;
+        $('saveBtn').disabled = true;
+        return;
+      }
       isSaving = true;
       try {
         const res = await fetch(`/api/tasks/${encodeURIComponent(projectId)}`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ content: toMarkdown() })
+          body: JSON.stringify({ content: md })
         });
         if (!res.ok) {
           const body = await res.json().catch(() => ({}));
@@ -1138,6 +1145,7 @@
         hasChanges = false;
         $('saveBtn').disabled = true;
         saveRetryCount = 0;
+        lastSavedMarkdown = md;
         if (!serverConnected) hideErrorBanner();
         showStatus('Saved');
       } catch (e) {
@@ -1227,6 +1235,7 @@
           throw new Error(body.error || `Server returned ${res.status}`);
         }
         const data = await res.json();
+        lastSavedMarkdown = data.content || '';
 
         let parsed;
         try {

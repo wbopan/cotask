@@ -139,8 +139,9 @@ Task Management 技能的任务跟踪 — 一个看板 dashboard，用于维护 
 - [ ] PWA 图标背景色改为页面背景色 #pwa-icon-bg
     当前 maskable 图标（icon-maskable-192/512.png）背景为深橙棕色，与页面背景不协调。将图标背景色改为页面背景色 #f8f6f1（暖白），保留章鱼像素画主体不变。
     AC: PWA 图标在 macOS Dock 和移动端主屏幕上显示时，背景为接近页面背景的浅暖白色而非深橙色。
-- [ ] 跳过无变化的写入 #skip-noop-save
+- [x] 跳过无变化的写入 #skip-noop-save
     当前任何操作（拖拽、编辑等）都会触发 markChanged → autoSave 写入，即使实际数据没有变化。应在 autoSave 中比较当前 toMarkdown() 输出与上次保存的内容，相同时跳过 PUT 请求。
+    CM: 新增 lastSavedMarkdown 快照，在 autoSave 中比较 toMarkdown() 输出，相同时跳过 PUT 并清除 dirty 标志。基线在 loadProject 和成功保存后更新。
     AC: 在 dashboard 中进行不改变任何数据的操作（如拖拽卡片回原位、打开编辑弹窗后不修改直接保存）后，不会触发 PUT 写入请求。
 - [x] Allow Multiline AC and CM #fix-multiline-ac
     现在的 AC 一个任务都只能出现一行，我们需要允许多行的 AC / CM，相当于允许有多个 acceptance criteria。具体方法就是多个 AC 开头的行。
