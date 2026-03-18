@@ -36,24 +36,6 @@
       line-height: 1.5;
     }
 
-    /* ===== SIDEBAR BRAND ===== */
-    .sidebar-brand {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      padding: 20px 16px 12px;
-      flex-shrink: 0;
-    }
-
-    .sidebar-brand .logo { width: 40px; height: 40px; flex-shrink: 0; }
-
-    .sidebar-brand-title {
-      font-size: 1.5rem;
-      font-weight: 700;
-      letter-spacing: -0.03em;
-      color: var(--text);
-    }
-
     button {
       background: var(--bg-card);
       color: var(--text);
