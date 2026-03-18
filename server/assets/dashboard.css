@@ -729,7 +729,7 @@
       gap: 3px;
       opacity: 0;
       pointer-events: none;
-      background: rgba(255, 255, 255, 0.55);
+      background: rgba(255, 255, 255, 0.92);
       transition: opacity 0.15s ease;
       z-index: 1;
     }
@@ -836,6 +836,14 @@
     .session-dot.clickable:hover {
       transform: scale(1.3);
     }
+    .session-dot.has-bg {
+      box-shadow: 0 0 0 2.5px var(--card-bg), 0 0 0 4.5px currentColor;
+      animation: bg-ring-pulse 2s ease-in-out infinite;
+    }
+    @keyframes bg-ring-pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.5; }
+    }
 
     /* ===== EMPTY STATE ===== */
     .empty-overlay {
@@ -890,8 +898,8 @@
       background: var(--bg-card);
       border-radius: 14px;
       width: 92%;
-      max-width: 580px;
-      max-height: 82vh;
+      max-width: 720px;
+      max-height: 90vh;
       overflow: hidden;
       display: flex;
       flex-direction: column;
@@ -967,47 +975,53 @@
     }
 
     .form-group textarea { min-height: 60px; resize: vertical; }
-    .form-group input:focus, .form-group textarea:focus { border-color: var(--accent); }
+    .form-group input:focus, .form-group textarea:focus, .form-group select:focus { border-color: var(--accent); }
 
-    .status-select-row { display: flex; gap: 6px; }
+    .form-row {
+      display: flex;
+      gap: 12px;
+      align-items: flex-start;
+    }
 
-    .status-option {
-      flex: 1;
+    .form-group select {
+      appearance: none;
+      background-image: linear-gradient(45deg, transparent 50%, var(--text-muted) 50%), linear-gradient(135deg, var(--text-muted) 50%, transparent 50%);
+      background-position: calc(100% - 12px) calc(50% - 2px), calc(100% - 8px) calc(50% - 2px);
+      background-size: 5px 5px, 5px 5px;
+      background-repeat: no-repeat;
+      padding-right: 24px;
+      cursor: pointer;
+    }
+
+    .status-select-wrap {
+      position: relative;
       display: flex;
       align-items: center;
-      justify-content: center;
-      gap: 5px;
-      padding: 7px;
-      border: 1px solid var(--border);
-      border-radius: var(--radius-sm);
-      cursor: pointer;
-      font-size: 11.5px;
-      font-weight: 500;
-      color: var(--text-secondary);
-      background: var(--bg);
-      transition: all 0.15s;
     }
 
-    .status-option:hover { border-color: var(--text-muted); }
-
-    .status-option.selected {
-      border-color: var(--accent);
-      background: var(--accent-light);
-      color: var(--accent);
-      font-weight: 600;
+    .status-select-wrap .status-select-icon {
+      position: absolute;
+      left: 8px;
+      pointer-events: none;
+      display: flex;
+      align-items: center;
+      z-index: 1;
     }
 
-    .status-option .status-icon {
+    .status-select-wrap .status-select-icon .status-icon {
       width: 14px;
       height: 14px;
       display: flex;
       align-items: center;
-      justify-content: center;
     }
 
-    .status-option .status-icon svg {
-      width: 12px;
-      height: 12px;
+    .status-select-wrap .status-select-icon .status-icon svg {
+      width: 14px;
+      height: 14px;
+    }
+
+    .status-select-wrap select {
+      padding-left: 28px;
     }
 
     .inline-input {

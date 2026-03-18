@@ -749,8 +749,11 @@
         if (session) {
           dot.classList.add(session.status); // running, idle, permission, notfound
           if (session.status === 'running') card.classList.add('session-running');
+          if (session.childProcesses > 0) dot.classList.add('has-bg');
           const titles = { running: 'Running', idle: 'Idle', permission: 'Waiting for permission', notfound: 'Session ended' };
-          dot.title = titles[session.status] || session.status;
+          let tip = titles[session.status] || session.status;
+          if (session.childProcesses > 0) tip += ` (${session.childProcesses} background)`;
+          dot.title = tip;
           if (['running', 'idle', 'permission'].includes(session.status)) {
             dot.classList.add('clickable');
             dot.title += ' — click to focus in Ghostty';
@@ -912,9 +915,20 @@
           <label>Title</label>
           <input type="text" id="mTitle" placeholder="What needs to be done?">
         </div>
-        <div class="form-group">
-          <label>ID</label>
-          <input type="text" id="mSlug" style="font-family:var(--mono);font-size:13px" placeholder="e.g. fix-auth-bug">
+        <div class="form-row">
+          <div class="form-group" style="flex:1">
+            <label>ID</label>
+            <input type="text" id="mSlug" style="font-family:var(--mono);font-size:13px" placeholder="e.g. fix-auth-bug">
+          </div>
+          <div class="form-group" style="width:140px">
+            <label>Status</label>
+            <div class="status-select-wrap">
+              <span class="status-select-icon" id="mStatusIcon">${statusIcon(defaultStatus)}</span>
+              <select id="mStatus">
+                ${STATUS_ORDER.map(st => `<option value="${st}" ${st === defaultStatus ? 'selected' : ''}>${STATUS_LABELS[st]}</option>`).join('')}
+              </select>
+            </div>
+          </div>
         </div>
         ${hasNamedSections ? `
         <div class="form-group">
@@ -925,33 +939,22 @@
         </div>
         ` : ''}
         <div class="form-group">
-          <label>Status</label>
-          <div class="status-select-row" id="mStatusRow">
-            ${STATUS_ORDER.map(st => `
-              <div class="status-option ${st === defaultStatus ? 'selected' : ''}" data-status="${st}">
-                ${statusIcon(st)}
-                ${STATUS_LABELS[st]}
-              </div>
-            `).join('')}
-          </div>
-        </div>
-        <div class="form-group">
           <label>Description</label>
-          <textarea id="mDesc" placeholder="Context and details..." rows="3"></textarea>
+          <textarea id="mDesc" placeholder="Context and details..." rows="6"></textarea>
         </div>
         <div class="form-group">
           <label>Acceptance Criteria</label>
-          <textarea id="mAc" placeholder="Testable, implementation-agnostic..." rows="2"></textarea>
+          <textarea id="mAc" placeholder="Testable, implementation-agnostic..." rows="5"></textarea>
         </div>
         <div class="form-group">
           <label>Completion Memo</label>
-          <textarea id="mCm" placeholder="What was done, decisions made, risks found..." rows="2"></textarea>
+          <textarea id="mCm" placeholder="What was done, decisions made, risks found..." rows="4"></textarea>
         </div>
       `, () => {
         const title = $('mTitle').value.trim();
         if (!title) return;
         const selSection = (hasNamedSections && $('mSection')) ? (sections.find(s => s.id === $('mSection').value) || section) : section;
-        const selStatus = document.querySelector('#mStatusRow .status-option.selected');
+        const selStatus = $('mStatus');
         selSection.tasks.push({
           id: uid(),
           title,
@@ -959,13 +962,13 @@
           desc: $('mDesc').value.trim(),
           ac: ($('mAc').value || '').replace(/\r\n?/g, '\n').trim(),
           cm: ($('mCm').value || '').replace(/\r\n?/g, '\n').trim(),
-          status: selStatus ? selStatus.dataset.status : defaultStatus,
+          status: selStatus ? selStatus.value : defaultStatus,
           sectionId: selSection.id
         });
         markChanged();
         render();
       });
-      setupStatusRow();
+      $('mStatus').addEventListener('change', () => { $('mStatusIcon').innerHTML = statusIcon($('mStatus').value); });
       setTimeout(() => $('mTitle').focus(), 50);
     }
 
@@ -976,13 +979,24 @@
           <label>Title</label>
           <input type="text" id="mTitle" value="${escapeAttr(task.title)}">
         </div>
-        <div class="form-group">
-          <label>ID</label>
-          <div style="display:flex;gap:6px;align-items:center">
-            <button type="button" id="mSlugCopy" title="Copy ID" class="slug-copy-btn">
-              <i data-lucide="copy"></i>
-            </button>
-            <input type="text" id="mSlug" value="${escapeAttr(task.slug || '')}" style="flex:1;font-family:var(--mono);font-size:13px" placeholder="e.g. fix-auth-bug">
+        <div class="form-row">
+          <div class="form-group" style="flex:1">
+            <label>ID</label>
+            <div style="display:flex;gap:6px;align-items:center">
+              <button type="button" id="mSlugCopy" title="Copy ID" class="slug-copy-btn">
+                <i data-lucide="copy"></i>
+              </button>
+              <input type="text" id="mSlug" value="${escapeAttr(task.slug || '')}" style="flex:1;font-family:var(--mono);font-size:13px" placeholder="e.g. fix-auth-bug">
+            </div>
+          </div>
+          <div class="form-group" style="width:140px">
+            <label>Status</label>
+            <div class="status-select-wrap">
+              <span class="status-select-icon" id="mStatusIcon">${statusIcon(task.status)}</span>
+              <select id="mStatus">
+                ${STATUS_ORDER.map(st => `<option value="${st}" ${st === task.status ? 'selected' : ''}>${STATUS_LABELS[st]}</option>`).join('')}
+              </select>
+            </div>
           </div>
         </div>
         ${hasNamedSections ? `
@@ -994,35 +1008,24 @@
         </div>
         ` : ''}
         <div class="form-group">
-          <label>Status</label>
-          <div class="status-select-row" id="mStatusRow">
-            ${STATUS_ORDER.map(st => `
-              <div class="status-option ${st === task.status ? 'selected' : ''}" data-status="${st}">
-                ${statusIcon(st)}
-                ${STATUS_LABELS[st]}
-              </div>
-            `).join('')}
-          </div>
-        </div>
-        <div class="form-group">
           <label>Description</label>
-          <textarea id="mDesc" rows="4">${escapeHtml(task.desc)}</textarea>
+          <textarea id="mDesc" rows="8">${escapeHtml(task.desc)}</textarea>
         </div>
         <div class="form-group">
           <label>Acceptance Criteria</label>
-          <textarea id="mAc" rows="3">${escapeHtml(task.ac)}</textarea>
+          <textarea id="mAc" rows="6">${escapeHtml(task.ac)}</textarea>
         </div>
         <div class="form-group">
           <label>Completion Memo</label>
-          <textarea id="mCm" rows="2">${escapeHtml(task.cm)}</textarea>
+          <textarea id="mCm" rows="4">${escapeHtml(task.cm)}</textarea>
         </div>
       `, () => {
         const title = $('mTitle').value.trim();
         if (!title) return;
-        const selStatus = document.querySelector('#mStatusRow .status-option.selected');
+        const selStatus = $('mStatus');
         task.title = title;
         task.slug = $('mSlug').value.trim().replace(/^#/, '');
-        task.status = selStatus ? selStatus.dataset.status : task.status;
+        task.status = selStatus ? selStatus.value : task.status;
         task.desc = $('mDesc').value.trim();
         task.ac = ($('mAc').value || '').replace(/\r\n?/g, '\n').trim();
         task.cm = ($('mCm').value || '').replace(/\r\n?/g, '\n').trim();
@@ -1041,7 +1044,7 @@
         markChanged();
         render();
       });
-      setupStatusRow();
+      $('mStatus').addEventListener('change', () => { $('mStatusIcon').innerHTML = statusIcon($('mStatus').value); });
       lucide.createIcons();
       $('mSlugCopy').addEventListener('click', () => {
         const val = $('mSlug').value.trim().replace(/^#/, '');
@@ -1072,15 +1075,6 @@
         render();
       });
       setTimeout(() => $('mSectionName').focus(), 50);
-    }
-
-    function setupStatusRow() {
-      document.querySelectorAll('#mStatusRow .status-option').forEach(opt => {
-        opt.addEventListener('click', () => {
-          document.querySelectorAll('#mStatusRow .status-option').forEach(o => o.classList.remove('selected'));
-          opt.classList.add('selected');
-        });
-      });
     }
 
     // ===== GLOBAL ADD TASK =====
