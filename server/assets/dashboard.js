@@ -649,24 +649,27 @@
 
       const terminalBtn = document.createElement('button');
       terminalBtn.className = 'terminal-btn';
-      terminalBtn.innerHTML = '<i data-lucide="ghost"></i>';
+
+      const session = getTaskSession(task);
+      if (session && ['running', 'idle', 'permission'].includes(session.status)) {
+        terminalBtn.innerHTML = '<i data-lucide="ghost"></i>';
+        terminalBtn.classList.add('terminal-active');
+        terminalBtn.title = 'Open running session in Ghostty';
+      } else if (session) {
+        terminalBtn.innerHTML = '<i data-lucide="play"></i>';
+        terminalBtn.classList.add('terminal-history');
+        terminalBtn.title = 'Copy resume command';
+      } else {
+        terminalBtn.innerHTML = '<i data-lucide="terminal"></i>';
+        terminalBtn.classList.add('terminal-no-session');
+        terminalBtn.title = 'Copy rename command';
+      }
+
       terminalBtn.addEventListener('click', (e) => {
         e.stopPropagation();
         handleTerminalAction(task, terminalBtn);
       });
       actions.appendChild(terminalBtn);
-
-      const session = getTaskSession(task);
-      if (session && ['running', 'idle', 'permission'].includes(session.status)) {
-        terminalBtn.classList.add('terminal-active');
-        terminalBtn.title = 'Open running session in Ghostty';
-      } else if (session) {
-        terminalBtn.classList.add('terminal-history');
-        terminalBtn.title = 'Copy resume command';
-      } else {
-        terminalBtn.classList.add('terminal-no-session');
-        terminalBtn.title = 'Copy rename command';
-      }
 
       if (task.slug) {
         const copyBtn = document.createElement('button');
