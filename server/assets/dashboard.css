@@ -36,39 +36,23 @@
       line-height: 1.5;
     }
 
-    /* ===== HEADER ===== */
-    header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 14px 24px;
-      border-bottom: 1px solid var(--border);
-      flex-shrink: 0;
-      background: var(--bg);
-    }
-
-    .header-left {
+    /* ===== SIDEBAR BRAND ===== */
+    .sidebar-brand {
       display: flex;
       align-items: center;
       gap: 12px;
+      padding: 20px 16px 12px;
+      flex-shrink: 0;
     }
 
-    .logo { width: 56px; height: 56px; flex-shrink: 0; }
+    .sidebar-brand .logo { width: 40px; height: 40px; flex-shrink: 0; }
 
-    .header-title {
-      font-size: 1.875rem;
+    .sidebar-brand-title {
+      font-size: 1.5rem;
       font-weight: 700;
       letter-spacing: -0.03em;
+      color: var(--text);
     }
-
-    .header-file {
-      font-size: 11px;
-      color: var(--text-muted);
-      font-family: var(--mono);
-      margin-top: 1px;
-    }
-
-    .header-right { display: flex; gap: 8px; align-items: center; }
 
     button {
       background: var(--bg-card);
@@ -1191,6 +1175,43 @@
       animation: fade-up 0.3s ease both;
     }
 
+/* ===== FAB ===== */
+.fab {
+  position: fixed;
+  bottom: 28px;
+  right: 28px;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: var(--accent);
+  color: white;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 14px rgba(196, 97, 60, 0.35);
+  transition: background 0.15s, transform 0.15s, box-shadow 0.15s;
+  z-index: 100;
+  padding: 0;
+}
+
+.fab:hover {
+  background: var(--accent-hover);
+  transform: scale(1.08);
+  box-shadow: 0 6px 20px rgba(196, 97, 60, 0.45);
+  border: none;
+}
+
+.fab:active {
+  transform: scale(0.95);
+}
+
+.fab svg {
+  width: 28px;
+  height: 28px;
+}
+
 @media (display-mode: standalone) {
   body {
     user-select: none;
@@ -1221,19 +1242,4 @@
   border-radius: var(--radius-sm);
   margin-top: 10px;
   color: var(--accent);
-}
-
-@media (display-mode: window-controls-overlay) {
-  header {
-    padding-left: env(titlebar-area-x, 0);
-    padding-top: 0;
-    height: env(titlebar-area-height, auto);
-    -webkit-app-region: drag;
-  }
-
-  header button,
-  header a,
-  header .logo {
-    -webkit-app-region: no-drag;
-  }
 }
