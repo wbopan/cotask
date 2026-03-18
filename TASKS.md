@@ -133,10 +133,11 @@ Task Management 技能的任务跟踪 — 一个看板 dashboard，用于维护 
 - [-] Dashboard UI 无法创建新任务 #fix-dashboard-create-task
     Dashboard 的创建任务功能（+ 按钮或 modal）无法正常工作，用户无法通过 UI 添加新任务。需要排查并修复。
     AC: 用户可以通过 Dashboard UI 的创建按钮成功添加新任务，任务正确写入 TASKS.md 并在看板上显示。
-- [/] 卡片操作按钮样式优化 #card-action-btn-style
+- [x] 卡片操作按钮样式优化 #card-action-btn-style
     当前卡片上的操作按钮太大、颜色各异不统一。缩小按钮尺寸并移至右上角；默认状态下按钮无颜色（灰色/无彩色），仅在 hover 时显示各自的彩色。
+    CM: 按钮从全卡片模糊覆盖层改为右上角紧凑布局（30px 按钮+同心圆圆角），默认灰色无边框，hover 时各按钮显示对应彩色。容器用半透明白色背景+边框。移除旧的 hover 全卡片 blur+opacity 效果。
     AC: 操作按钮位于卡片右上角且尺寸比当前更小；未 hover 时所有按钮为统一的无彩色样式；hover 单个按钮时该按钮显示对应彩色。
-- [ ] PWA 图标背景色改为页面背景色 #pwa-icon-bg
+- [/] PWA 图标背景色改为页面背景色 #pwa-icon-bg
     当前 maskable 图标（icon-maskable-192/512.png）背景为深橙棕色，与页面背景不协调。将图标背景色改为页面背景色 #f8f6f1（暖白），保留章鱼像素画主体不变。
     AC: PWA 图标在 macOS Dock 和移动端主屏幕上显示时，背景为接近页面背景的浅暖白色而非深橙色。
 - [x] 跳过无变化的写入 #skip-noop-save
