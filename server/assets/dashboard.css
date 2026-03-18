@@ -620,6 +620,29 @@
     .task-card.session-running .task-card-ac .ac-label {
       -webkit-text-fill-color: initial;
     }
+    /* Blue shimmer for background-active session cards */
+    .task-card.session-bg-active .task-card-title,
+    .task-card.session-bg-active .task-card-desc,
+    .task-card.session-bg-active .task-card-ac {
+      background: linear-gradient(90deg, #1a1917 25%, #3b82f6 45%, #3b82f6 55%, #1a1917 75%);
+      background-size: 200% 100%;
+      -webkit-background-clip: text;
+      background-clip: text;
+      -webkit-text-fill-color: transparent;
+      animation: shimmer 5s linear infinite;
+    }
+    .task-card.session-bg-active .task-card-desc,
+    .task-card.session-bg-active .task-card-ac {
+      background: linear-gradient(90deg, #64748b 25%, #3b82f6 45%, #3b82f6 55%, #64748b 75%);
+      background-size: 200% 100%;
+      -webkit-background-clip: text;
+      background-clip: text;
+      -webkit-text-fill-color: transparent;
+      animation: shimmer 5s linear infinite;
+    }
+    .task-card.session-bg-active .task-card-ac .ac-label {
+      -webkit-text-fill-color: initial;
+    }
     @keyframes shimmer {
       0% { background-position: 200% 0; }
       100% { background-position: -200% 0; }
@@ -797,38 +820,28 @@
     }
 
     /* ===== SESSION STATUS DOT ===== */
-    .session-dot {
-      display: inline-block;
-      width: 13px;
-      height: 13px;
-      border-radius: 50%;
+    .session-capsule {
+      display: inline-flex;
+      align-items: center;
+      gap: 3px;
+      width: 44px;
+      padding: 3px 0 3px 5px;
+      border-radius: 999px;
+      font-size: 9px;
+      font-weight: 600;
+      line-height: 1;
+      white-space: nowrap;
       flex-shrink: 0;
-      vertical-align: -2px;
-      margin-right: 6px;
+      box-sizing: border-box;
+      margin-right: 4px;
+      vertical-align: middle;
     }
-    .session-dot.running   { background: #22c55e; }
-    .session-dot.idle       { background: #f59e0b; }
-    .session-dot.permission { background: #a855f7; box-shadow: 0 0 6px rgba(168, 85, 247, 0.4); }
-    .session-dot.notfound   { background: #94a3b8; }
-    .session-dot.none {
-      background: none;
-      border: 1.5px dashed #cbd5e1;
-    }
-    .session-dot.clickable {
-      cursor: pointer;
-      transition: transform 0.15s, box-shadow 0.15s;
-    }
-    .session-dot.clickable:hover {
-      transform: scale(1.3);
-    }
-    .session-dot.has-bg {
-      box-shadow: 0 0 0 2.5px var(--card-bg), 0 0 0 4.5px currentColor;
-      animation: bg-ring-pulse 2s ease-in-out infinite;
-    }
-    @keyframes bg-ring-pulse {
-      0%, 100% { opacity: 1; }
-      50% { opacity: 0.5; }
-    }
+    .session-capsule svg { width: 13px !important; height: 13px !important; flex-shrink: 0; }
+    .session-capsule.running   { background: rgba(34, 197, 94, 0.12); color: #16a34a; }
+    .session-capsule.idle      { background: rgba(245, 158, 11, 0.12); color: #d97706; }
+    .session-capsule.permission { background: rgba(168, 85, 247, 0.12); color: #9333ea; }
+    .session-capsule.notfound  { background: rgba(148, 163, 184, 0.12); color: #94a3b8; }
+    .session-capsule.bg-active { background: rgba(59, 130, 246, 0.12); color: #2563eb; }
 
     /* ===== EMPTY STATE ===== */
     .empty-overlay {

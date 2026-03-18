@@ -4,7 +4,9 @@ import fsSync from 'fs';
 import path from 'path';
 import os from 'os';
 import https from 'https';
-import { execFile } from 'child_process';
+import { execFile as execFileCb } from 'child_process';
+import { promisify } from 'util';
+const execFileAsync = promisify(execFileCb);
 
 const app = express();
 const PORT = 3847;
@@ -216,7 +218,11 @@ app.post('/api/heartbeat', (req, res) => {
   if (state === 'notfound') {
     heartbeats.delete(sessionId);
   } else {
-    heartbeats.set(sessionId, { state, ts: Date.now(), pid: pid || null });
+    const prev = heartbeats.get(sessionId);
+    const now = Date.now();
+    // Track when the current state was entered
+    const stateTs = (prev && prev.state === state) ? prev.stateTs : now;
+    heartbeats.set(sessionId, { state, ts: now, stateTs, pid: pid || null });
   }
   res.json({ ok: true });
 });
@@ -257,6 +263,7 @@ app.get('/api/sessions/:projectId', async (req, res) => {
     if (!title) continue;
 
     let status = 'notfound';
+    let childProcesses = 0;
     const hb = heartbeats.get(entry.sessionId);
     if (hb) {
       let alive = true;
@@ -265,12 +272,20 @@ app.get('/api/sessions/:projectId', async (req, res) => {
       }
       if (alive) {
         status = hb.state;
+        // Count child processes to detect background tasks/subagents
+        if (hb.pid) {
+          try {
+            const { stdout } = await execFileAsync('pgrep', ['-P', String(hb.pid)]);
+            childProcesses = stdout.trim().split('\n').filter(Boolean).length;
+          } catch { /* pgrep exits 1 when no children found */ }
+        }
       } else {
         heartbeats.delete(entry.sessionId);
       }
     }
 
-    result[title] = { sessionId: entry.sessionId, status };
+    const stateTs = hb?.stateTs || null;
+    result[title] = { sessionId: entry.sessionId, status, childProcesses, stateTs };
   }
 
   res.json(result);
@@ -371,7 +386,7 @@ function getOAuthToken(forceRefresh = false) {
   return new Promise((resolve, reject) => {
     if (cachedOAuthToken && !forceRefresh) return resolve(cachedOAuthToken);
     cachedOAuthToken = null;
-    execFile('security', ['find-generic-password', '-s', 'Claude Code-credentials', '-w'], (err, stdout) => {
+    execFileCb('security', ['find-generic-password', '-s', 'Claude Code-credentials', '-w'], (err, stdout) => {
       if (err) return reject(err);
       try {
         const creds = JSON.parse(stdout.trim());

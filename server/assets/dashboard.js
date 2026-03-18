@@ -391,6 +391,10 @@
       renderSidebar();
       renderBoard();
       lucide.createIcons();
+      // Capsule icons need thicker strokes at small size
+      document.querySelectorAll('.session-capsule svg').forEach(svg => {
+        svg.setAttribute('stroke-width', '2.5');
+      });
     }
 
     function flipAnimate(el, oldRect, spring) {
@@ -650,7 +654,8 @@
       terminalBtn.className = 'terminal-btn';
 
       const session = getTaskSession(task);
-      if (session && ['running', 'idle', 'permission'].includes(session.status)) {
+      const isSessionAlive = session && ['running', 'idle', 'permission'].includes(session.status);
+      if (isSessionAlive) {
         terminalBtn.innerHTML = '<i data-lucide="ghost"></i>';
         terminalBtn.classList.add('terminal-active');
         terminalBtn.title = 'Open running session in Ghostty';
@@ -741,31 +746,26 @@
         content.appendChild(cm);
       }
 
-      // Session status dot (ongoing tasks only)
-      if (task.status === 'ongoing') {
-        const dot = document.createElement('span');
-        dot.className = 'session-dot';
-        if (session) {
-          dot.classList.add(session.status); // running, idle, permission, notfound
-          if (session.status === 'running') card.classList.add('session-running');
-          if (session.childProcesses > 0) dot.classList.add('has-bg');
-          const titles = { running: 'Running', idle: 'Idle', permission: 'Waiting for permission', notfound: 'Session ended' };
-          let tip = titles[session.status] || session.status;
-          if (session.childProcesses > 0) tip += ` (${session.childProcesses} background)`;
-          dot.title = tip;
-          if (['running', 'idle', 'permission'].includes(session.status)) {
-            dot.classList.add('clickable');
-            dot.title += ' — click to focus in Ghostty';
-            dot.addEventListener('click', (e) => {
-              e.stopPropagation();
-              focusGhosttyTab(key);
-            });
-          }
-        } else {
-          dot.classList.add('none');
-          dot.title = 'No session linked';
+      // Session status capsule (all tasks with a linked session)
+      if (session) {
+        const isBgActive = session.status === 'idle' && session.childProcesses > 0;
+        const capsuleStatus = isBgActive ? 'bg-active' : session.status;
+        const icons = { running: 'play', idle: 'coffee', permission: 'hand', notfound: 'unplug', 'bg-active': 'terminal' };
+        const icon = icons[capsuleStatus] || 'circle';
+
+        let timeText = 'off';
+        if (session.status !== 'notfound' && session.stateTs) {
+          const mins = Math.max(1, Math.floor((Date.now() - session.stateTs) / 60000));
+          timeText = mins < 60 ? `${mins}m` : `${Math.floor(mins / 60)}h`;
         }
-        title.prepend(dot);
+
+        const capsule = document.createElement('span');
+        capsule.className = `session-capsule ${capsuleStatus}`;
+        capsule.innerHTML = `<i data-lucide="${icon}"></i>${timeText}`;
+        title.prepend(capsule);
+
+        if (session.status === 'running') card.classList.add('session-running');
+        if (isBgActive) card.classList.add('session-bg-active');
       }
 
       card.appendChild(content);
