@@ -42,10 +42,10 @@
     const STATUS_ORDER = ['ongoing', 'todo', 'canceled', 'done'];
     const STATUS_LABELS = { todo: 'Pending', ongoing: 'Ongoing', done: 'Done', canceled: 'Backlog' };
     const STATUS_SYMBOLS = { todo: '[ ]', ongoing: '[/]', done: '[x]', canceled: '[-]' };
-    const STATUS_COLORS = { ongoing: '#2563eb', todo: '#e09400', done: '#16a34a', canceled: '#94a3b8' };
+    const STATUS_COLORS = { ongoing: '#5e6ad2', todo: '#f2994a', done: '#4cb782', canceled: '#8b8f98' };
 
     function statusIcon(status) {
-      const c = STATUS_COLORS[status] || '#94a3b8';
+      const c = STATUS_COLORS[status] || '#8b8f98';
       const icons = {
         ongoing: `<svg viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="8" cy="8" r="6.5" stroke="${c}" stroke-width="1.8"/><polygon points="6.8,4.8 11.5,8 6.8,11.2" fill="${c}"/></svg>`,
         todo: `<svg viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="8" cy="8" r="6.5" stroke="${c}" stroke-width="1.8"/><path d="M8 5v3.5l2.5 1.5" stroke="${c}" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
