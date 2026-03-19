@@ -19,8 +19,10 @@
       --status-ongoing: #5e6ad2;
       --status-done: #4cb782;
       --status-canceled: #8b8f98;
-      --radius: 10px;
-      --radius-sm: 6px;
+      --radius-lg: 18px;
+      --radius: 14px;
+      --radius-sm: 10px;
+      --radius-xs: 6px;
       --font: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
       --mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
     }
@@ -163,7 +165,7 @@
       display: flex;
       align-items: center;
       justify-content: center;
-      border-radius: 5px;
+      border-radius: var(--radius-xs);
       background: transparent;
       border: 1px solid transparent;
       color: var(--text-muted);
@@ -272,7 +274,7 @@
       cursor: pointer;
       transition: background 0.15s;
       border-left: 3px solid transparent;
-      border-radius: 6px;
+      border-radius: var(--radius-sm);
       margin: 1px 0;
     }
 
@@ -355,7 +357,7 @@
       margin-top: 6px;
       padding: 6px 8px;
       background: rgba(255,255,255,0.5);
-      border-radius: 4px;
+      border-radius: var(--radius-xs);
       display: none;
       overflow: hidden;
       max-height: 80px;
@@ -511,7 +513,7 @@
       color: var(--text-muted);
       background: var(--bg-warm);
       padding: 1px 7px;
-      border-radius: 8px;
+      border-radius: var(--radius-sm);
       margin-left: auto;
     }
 
@@ -768,7 +770,7 @@
       height: 30px;
       padding: 0;
       line-height: 1;
-      border-radius: 7px;
+      border-radius: var(--radius-sm);
       display: flex;
       align-items: center;
       justify-content: center;
@@ -943,7 +945,7 @@
 
     .modal {
       background: var(--bg-card);
-      border-radius: 14px;
+      border-radius: var(--radius-lg);
       width: 92%;
       max-width: 720px;
       max-height: 90vh;
@@ -1129,7 +1131,7 @@
       padding: 4px 12px;
       font-size: 12px;
       cursor: pointer;
-      border-radius: 4px;
+      border-radius: var(--radius-xs);
     }
     .file-changed-banner button:hover { background: rgba(255,255,255,0.3); }
 
@@ -1158,7 +1160,7 @@
       padding: 4px 12px;
       font-size: 12px;
       cursor: pointer;
-      border-radius: 4px;
+      border-radius: var(--radius-xs);
     }
     .error-banner button:hover { background: rgba(255,255,255,0.3); }
 
@@ -1420,7 +1422,7 @@
     color: var(--bg);
     font-size: 11px;
     padding: 3px 8px;
-    border-radius: 4px;
+    border-radius: var(--radius-xs);
     white-space: nowrap;
     opacity: 0;
     pointer-events: none;
