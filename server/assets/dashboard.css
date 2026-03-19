@@ -1488,7 +1488,7 @@
 }
 
 /* ===== [10] Container queries for compact task cards ===== */
-@container column (max-width: 300px) {
+@container column (max-width: 220px) {
   .task-card-ac,
   .task-card-cm {
     display: none;
