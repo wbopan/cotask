@@ -1253,7 +1253,7 @@
 .quick-create-bar:focus-within .quick-create-actions,
 .quick-create-bar.has-content .quick-create-actions {
   opacity: 1;
-  pointer-events: all;
+  pointer-events: auto;
 }
 
 .quick-create-btn {

@@ -1090,6 +1090,8 @@
       if (e.key === 'Enter') {
         e.preventDefault();
         $('quickCreateCopy').click();
+      } else if (e.key === 'Escape') {
+        quickInput.blur();
       }
     });
 
