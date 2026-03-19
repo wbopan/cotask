@@ -16,10 +16,10 @@ const sharp = require('sharp');
 const SVG_SRC = path.join(ASSETS, 'octopus.svg');
 
 // Scale factors (Lucide badge-check spans ~20 units in 24-unit space):
-// "any":      scale(17.4) → 20 × 17.4 = 348px ≈ 68% of 512
-// "maskable": scale(13.9) → 20 × 13.9 = 278px ≈ 54% of 512
-const ANY_SCALE = 17.4;
-const MASKABLE_SCALE = 13.9;
+// "any":      scale(18.5) → 20 × 18.5 = 370px ≈ 72% of 512
+// "maskable": scale(14.8) → 20 × 14.8 = 296px ≈ 58% of 512
+const ANY_SCALE = 18.5;
+const MASKABLE_SCALE = 14.8;
 
 function buildSvg(scale) {
   return `<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
