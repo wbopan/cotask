@@ -30,7 +30,7 @@ The plugin is discovered via `.claude-plugin/plugin.json`. It registers:
 
 - **Hooks** (`hooks/hooks.json`): `heartbeat.sh` runs async on 6 lifecycle events (SessionStart, UserPromptSubmit, PostToolUse, Stop, Notification, SessionEnd), POSTing session state (`idle`/`running`/`permission`/`notfound`) to `localhost:3847/api/heartbeat`.
 - **Skills** (`skills/`): `octask` (TASKS.md convention), `creating-task`, `starting-task`, `dashboard`. All are skills (not commands) so they're invoked as `/creating-task` without a `pluginName:` prefix.
-- **Post-install** (`hooks/post-install.sh`): Runs `npm install` in `server/` and downloads bundled UI assets.
+- **Post-install** (`hooks/post-install.sh`): Runs `npm install` in `server/`.
 
 ### Server (`server/server.js`)
 
@@ -62,11 +62,16 @@ Three files (HTML structure, CSS, JS), no framework or build tooling. Key intern
 - `CM:` (completion memo) line required before marking done
 - AC lines must be testable, implementation-agnostic, black-box observable
 
+## Marketplace
+
+Marketplace 配置在本仓库 `.claude-plugin/marketplace.json`，`"source": "./"` 表示插件代码就在仓库根目录。更新版本号时需同时更新 `plugin.json` 和 `marketplace.json` 的 `version` 字段。
+
 ## Key Paths
 
 | Purpose | Path |
 |---------|------|
 | Plugin manifest | `.claude-plugin/plugin.json` |
+| Marketplace manifest | `.claude-plugin/marketplace.json` |
 | Hook definitions | `hooks/hooks.json` |
 | Octask skill | `skills/octask/SKILL.md` |
 | Creating-task skill | `skills/creating-task/SKILL.md` |
