@@ -4,6 +4,7 @@
   "private": true,
   "type": "module",
   "dependencies": {
-    "express": "^4"
+    "express": "^4",
+    "sharp": "^0.34.5"
   }
 }
