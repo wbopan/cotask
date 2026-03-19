@@ -113,9 +113,6 @@ Task Management 技能的任务跟踪 — 一个看板 dashboard，用于维护 
     当前项目最大的文件（dashboard.html ~2300 行、server.js）过长，难以维护和 AI 编辑。拆分为更合理的模块结构，如将 dashboard 的 CSS、parser、renderer、drag-drop 等逻辑分离。
     CM: 将 dashboard.html（2466 行）拆为三个文件：dashboard.html（99 行，HTML 结构）、dashboard.css（1121 行，样式）、dashboard.js（1243 行，逻辑）。使用绝对路径 `/assets/` 引用外部资源，Express 静态中间件自动服务。无需构建步骤。
     AC: 最长文件不超过合理阈值；拆分后功能不变；模块间接口清晰。
-- [-] 迁移到现代技术栈 #modernize-stack
-    将运行时从 Node.js + npm 迁移到 Bun，利用其内置 bundler、test runner 和更快的启动速度。移除 Express 依赖，改用 Bun 原生 HTTP server。更新 package.json scripts、post-install hook 和 CI 配置。
-    AC: 项目使用 Bun 运行和安装依赖；server 启动正常且功能不变；不再依赖 node/npm。
 - [x] 去掉 cli 改成 claude 命令 #remove-dashboard
     现在我们使用一个命令行工具来打开 dashboard。这个做法不太友好，正确的做法应该是增加一个 /dashboard 命令在 cc 中，然后这个命令让 CC 向用户呈现运行 dashboard 命令，或者建议让 claude 自己来运行，或者建议把它配置成一个一直运行的服务。
     CM: 重写 /dashboard 命令为完整流程（检查端口→启动→打开浏览器→建议 PWA）。移除 post-install 的全局 CLI symlink。更新 SKILL.md、README、dashboard.js 的 octask-dashboard 引用为 /dashboard。
@@ -159,19 +156,23 @@ Task Management 技能的任务跟踪 — 一个看板 dashboard，用于维护 
 - [x] 修复状态感知 #fix-state-sensing
     为 session 增加后台进程检测。heartbeat 已上报 claude 进程 PID，server 端用 `pgrep -P <pid>` 查子进程数量即可判断有没有活跃的 background task 或 subagent。在 `/api/sessions/:projectId` 响应中增加 `childProcesses: number` 字段，dashboard ongoing 卡片展示后台活动指示器。
     AC: 有活跃后台进程的 ongoing 任务在 dashboard 上显示明确的后台活动标识；进程结束后标识消失。
-- [-] 拆分 marketplace 和插件为独立仓库 #split-marketplace-repo
-    当前 marketplace 配置和插件代码混在同一仓库。拆为两个独立 repo：一个是插件本体（代码、skill、commands），另一个是 marketplace registry（marketplace.json、发布元数据）。插件 repo 通过 git URL 被 marketplace 引用。
-    AC: 插件代码和 marketplace 配置分别在两个独立 git 仓库中维护；marketplace repo 通过 URL 引用插件 repo；两边可独立发版。
 - [/] 侧边栏项目卡片指标改为数字统计 #sidebar-project-stats
     将项目进度条下方的状态图标改为两组数字指标：(1) 未完成任务数量（icon + 数字）；(2) 当前活跃 session 数量，按状态分类显示（running/idle/permission/background，各自 icon + 数字）。风格保持 icon + 数字的简洁形式。
     AC: 项目卡片进度条下方显示未完成任务计数和各状态 session 计数（icon+数字）；数据与实际 TASKS.md 和 session 状态一致；无活跃 session 时 session 区域显示 0 或隐藏。
-- [/] 优化 starting-task skill：防止跳过任务创建和过度激进执行 #fix-starting-task-aggression
+- [x] 优化 starting-task skill：防止跳过任务创建和过度激进执行 #fix-starting-task-aggression
     当前 starting-task skill 有两个问题：(1) 模型有时不先创建任务就直接开始解决问题；(2) 更严重的是，skill 会导致模型变得过于激进，即使任务描述中写了 "plan first"，模型也会跳过规划直接开始执行代码修改。需要在 skill 文本中加强约束，确保模型先完成任务标记，再理解需求和制定计划，最后才动手。
+    CM: 重写 SKILL.md：去掉 Step 2 的恐吓语气（"STOP"/"you have failed"），拆 Step 3 为理解+计划（Step 3）和执行（Step 4）两步，新增条件门——args 或任务描述含 "plan first" 等信号时停在计划阶段等用户确认。强化无匹配任务时必须先创建的约束。通过 2 组 eval（with/without skill）验证：讨论模式正确停住且标记 [/]，无匹配任务时先创建再推进。
     AC: 模型调用 /starting-task 后，必须先在 TASKS.md 中标记任务为 ongoing，再展示理解和计划，最后才开始执行；不会跳过任务创建直接解决问题；任务描述中有 "plan first" 等指示时模型遵守而非忽略。
-- [ ] Dashboard 快速创建任务输入框 #dashboard-quick-create-cli
-    在 dashboard 中添加一个输入框，用户口头描述任务后输入文字，点击按钮即可复制 CLI 命令 `cd {projectpath} && claude "/creating-task {description}"` 到剪贴板。考虑放置位置：可以替代或增强现有 FAB 按钮的流程，点击 FAB 后弹出输入框而非直接打开编辑 modal。
-    AC: dashboard 中有输入框可输入任务描述；点击按钮后 `cd {实际项目路径} && claude "/creating-task {用户输入}"` 被复制到剪贴板；交互流畅不打断当前浏览。
 - [x] 优化 creating-task skill 使其 self-contained #creating-task-self-contained
     当前 creating-task skill 文本不够详细，执行该命令的模型可能没有读过 /octask skill，缺少 TASKS.md 格式规范（缩进、slug 位置、AC 格式等）。同时模型倾向于做大量代码阅读才创建任务，应限制为只读 TASKS.md。
     CM: 重写 SKILL.md：内联完整的任务格式示例（slug、4-space 缩进、AC 行）和状态符号表，workflow 简化为"Read TASKS.md → Write entry → Confirm"，明确禁止读取其他文件。通过 2 轮 eval（6 runs each）验证：skill 版本正确检测重复任务、格式合规、token 效率高 18%。
     AC: creating-task skill 内联完整的任务格式规范和示例，不依赖 /octask skill；模型执行时只读 TASKS.md 不探索代码库。
+- [/] Dashboard 快速创建任务输入框 #dashboard-quick-create-cli
+    在 dashboard 中添加一个输入框，用户口头描述任务后输入文字，点击按钮即可复制 CLI 命令 `cd {projectpath} && claude "/creating-task {description}"` 到剪贴板。考虑放置位置：可以替代或增强现有 FAB 按钮的流程，点击 FAB 后弹出输入框而非直接打开编辑 modal。
+    AC: dashboard 中有输入框可输入任务描述；点击按钮后 `cd {实际项目路径} && claude "/creating-task {用户输入}"` 被复制到剪贴板；交互流畅不打断当前浏览。
+- [-] 迁移到现代技术栈 #modernize-stack
+    将运行时从 Node.js + npm 迁移到 Bun，利用其内置 bundler、test runner 和更快的启动速度。移除 Express 依赖，改用 Bun 原生 HTTP server。更新 package.json scripts、post-install hook 和 CI 配置。
+    AC: 项目使用 Bun 运行和安装依赖；server 启动正常且功能不变；不再依赖 node/npm。
+- [-] 拆分 marketplace 和插件为独立仓库 #split-marketplace-repo
+    当前 marketplace 配置和插件代码混在同一仓库。拆为两个独立 repo：一个是插件本体（代码、skill、commands），另一个是 marketplace registry（marketplace.json、发布元数据）。插件 repo 通过 git URL 被 marketplace 引用。
+    AC: 插件代码和 marketplace 配置分别在两个独立 git 仓库中维护；marketplace repo 通过 URL 引用插件 repo；两边可独立发版。

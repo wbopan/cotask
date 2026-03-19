@@ -51,6 +51,34 @@
         {"name": "plan-before-code", "type": "output_contains_any", "values": ["approach", "plan", "strategy", "outline", "here's how", "here's what"]}
       ],
       "files": ["test-fixture-tasks.md"]
+    },
+    {
+      "id": 5,
+      "name": "respects-discuss-first-in-args",
+      "prompt": "The user's TASKS.md is at the working directory. The user invokes /starting-task with args '#user-auth-jwt 先讨论一下，分析一下'. Follow the skill instructions completely. You have access to Read, Edit, Write, Bash, and Glob tools.",
+      "expected_output": "Should mark the task [/], present understanding and plan, then STOP and wait for user input. Should NOT start writing code or creating files. The '先讨论一下' in args means the user wants to discuss first.",
+      "assertions": [
+        {"name": "marked-ongoing", "type": "file_contains", "file": "TASKS.md", "value": "[/] User authentication with JWT"},
+        {"name": "showed-understanding", "type": "output_contains_any", "values": ["authentication", "JWT", "register", "login"]},
+        {"name": "showed-plan", "type": "output_contains_any", "values": ["approach", "plan", "step", "strategy"]},
+        {"name": "no-file-creation", "type": "output_not_contains_any", "values": ["Write tool", "creating file", "writing to", "mkdir"]},
+        {"name": "no-code-output", "type": "output_not_contains_any", "values": ["```javascript", "```typescript", "```python", "import express", "const express", "require("]}
+      ],
+      "files": ["test-fixture-tasks.md"]
+    },
+    {
+      "id": 6,
+      "name": "no-matching-task-creates-first",
+      "prompt": "The user's TASKS.md is at the working directory. The user invokes /starting-task with args 'Add WebSocket support for real-time notifications'. There is no matching task in TASKS.md. Follow the skill instructions completely. You have access to Read, Edit, Write, Bash, and Glob tools.",
+      "expected_output": "Should recognize that no matching task exists, create a new task in TASKS.md (with slug, description, AC), mark it [/] ongoing, then present understanding and plan. Should NOT start solving the problem without first creating and tracking the task.",
+      "assertions": [
+        {"name": "task-created", "type": "file_contains_regex", "file": "TASKS.md", "value": "WebSocket|websocket|web.socket"},
+        {"name": "has-slug", "type": "file_contains_regex", "file": "TASKS.md", "value": "#[a-z-]*socket"},
+        {"name": "marked-ongoing", "type": "file_contains_regex", "file": "TASKS.md", "value": "\\[/\\].*[Ww]eb[Ss]ocket"},
+        {"name": "has-ac", "type": "file_contains_regex", "file": "TASKS.md", "value": "AC:.*"},
+        {"name": "showed-plan", "type": "output_contains_any", "values": ["approach", "plan", "step", "strategy", "understand"]}
+      ],
+      "files": ["test-fixture-tasks.md"]
     }
   ]
 }
