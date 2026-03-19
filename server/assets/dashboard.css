@@ -824,8 +824,7 @@
       display: inline-flex;
       align-items: center;
       gap: 3px;
-      width: 44px;
-      padding: 3px 0 3px 5px;
+      padding: 3px 6px 3px 5px;
       border-radius: 999px;
       font-size: 9px;
       font-weight: 600;
@@ -1177,6 +1176,29 @@
     .project-mini-bar .done { background: var(--status-done); }
     .project-mini-bar .ongoing { background: var(--status-ongoing); }
 
+    /* Project stats row — shown on all project items */
+    .proj-stats-row {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin-top: 5px;
+      flex-wrap: wrap;
+    }
+    .proj-task-count {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      color: var(--text-secondary);
+    }
+    .proj-task-count svg { width: 12px; height: 12px; stroke: var(--text-secondary); flex-shrink: 0; }
+    .proj-task-count .count-num {
+      font-weight: 700;
+      font-size: 13px;
+      color: var(--text);
+      font-family: var(--mono);
+    }
+    .proj-stat-sep { width: 1px; height: 13px; background: var(--border); flex-shrink: 0; }
+
     /* Active project expanded content */
     .project-expanded {
       padding-top: 8px;
@@ -1189,50 +1211,78 @@
       animation: fade-up 0.3s ease both;
     }
 
-/* ===== QUICK CREATE BAR ===== */
-.quick-create-bar {
+/* ===== QUICK CREATE ===== */
+
+/* Wrapper — anchors everything to bottom-right */
+.quick-create-wrapper {
   position: fixed;
-  bottom: 20px;
+  bottom: 28px;
   right: 28px;
-  left: calc(var(--sidebar-width, 350px) + 28px);
-  background: var(--card-bg);
-  border: 1.5px solid var(--border);
-  border-radius: 999px;
-  padding: 8px 8px 8px 18px;
+  z-index: 100;
   display: flex;
   align-items: center;
-  gap: 10px;
-  box-shadow: 0 1px 4px rgba(0,0,0,0.03);
-  z-index: 100;
-  transition: border-color 0.15s, box-shadow 0.15s;
+  gap: 8px;
 }
 
-.quick-create-bar:focus-within {
-  border-color: var(--accent);
-  box-shadow: 0 2px 10px rgba(13, 148, 136, 0.06);
+/* Capsule — slides out to the left of the FAB */
+.quick-create-capsule {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 6px;
+  max-width: 0;
+  overflow: hidden;
+  opacity: 0;
+  box-shadow: none;
+  transition: max-width 0.3s cubic-bezier(0.16, 1, 0.3, 1),
+              opacity 0.2s ease,
+              padding 0.3s cubic-bezier(0.16, 1, 0.3, 1),
+              box-shadow 0.2s ease;
 }
 
-.quick-create-plus {
-  color: var(--text-muted);
-  font-size: 16px;
-  font-weight: 300;
-  line-height: 1;
+.quick-create-wrapper.expanded .quick-create-capsule {
+  max-width: 360px;
+  opacity: 1;
+  padding: 6px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12), 0 2px 8px rgba(0, 0, 0, 0.06);
+}
+
+/* Editor button inside capsule */
+.quick-create-editor {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  padding: 0;
   flex-shrink: 0;
-  transition: color 0.15s;
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--text-muted);
+  transition: border-color 0.12s, color 0.12s;
 }
 
-.quick-create-bar:focus-within .quick-create-plus {
-  color: var(--accent);
+.quick-create-editor:hover {
+  border-color: var(--text-muted);
+  color: var(--text);
 }
 
+/* Input inside capsule */
 .quick-create-input {
-  flex: 1;
+  width: 240px;
   border: none;
   outline: none;
   background: transparent;
   font-size: 13px;
   font-family: inherit;
   color: var(--text);
+  padding: 0 6px;
+  flex-shrink: 1;
   min-width: 0;
 }
 
@@ -1241,53 +1291,35 @@
   opacity: 0.7;
 }
 
-.quick-create-actions {
-  display: flex;
-  gap: 4px;
-  flex-shrink: 0;
-  opacity: 0;
-  pointer-events: none;
-  transition: opacity 0.15s;
-}
-
-.quick-create-bar:focus-within .quick-create-actions,
-.quick-create-bar.has-content .quick-create-actions {
-  opacity: 1;
-  pointer-events: auto;
-}
-
-.quick-create-btn {
-  width: 32px;
-  height: 32px;
+/* FAB — always visible, rightmost. Shows + or clipboard icon. */
+.quick-create-fab {
+  width: 46px;
+  height: 46px;
   border-radius: 50%;
+  background: var(--accent);
+  color: white;
+  border: none;
+  cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  cursor: pointer;
-  transition: background 0.12s, border-color 0.12s;
+  box-shadow: 0 4px 14px rgba(13, 148, 136, 0.35);
+  transition: background 0.15s, box-shadow 0.15s, transform 0.1s;
   padding: 0;
+  flex-shrink: 0;
 }
 
-.quick-create-btn.editor {
-  background: transparent;
-  border: 1px solid var(--border);
-  color: var(--text-muted);
-}
-
-.quick-create-btn.editor:hover {
-  border-color: var(--text-muted);
-  color: var(--text);
-}
-
-.quick-create-btn.copy {
-  background: var(--accent);
-  border: none;
-  color: white;
-}
-
-.quick-create-btn.copy:hover {
+.quick-create-fab:hover {
   background: var(--accent-hover);
+  box-shadow: 0 6px 20px rgba(13, 148, 136, 0.45);
 }
+
+.quick-create-fab:active { transform: scale(0.93); }
+
+/* Icon swap */
+.quick-create-fab .icon-copy { display: none; }
+.quick-create-wrapper.expanded .quick-create-fab .icon-plus { display: none; }
+.quick-create-wrapper.expanded .quick-create-fab .icon-copy { display: block; }
 
 @media (display-mode: standalone) {
   body {
