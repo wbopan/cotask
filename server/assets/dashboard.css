@@ -603,7 +603,7 @@
       margin-top: 4px;
       line-height: 1.45;
       display: -webkit-box;
-      -webkit-line-clamp: 2;
+      -webkit-line-clamp: 3;
       -webkit-box-orient: vertical;
       overflow: hidden;
       cursor: pointer;
@@ -680,6 +680,10 @@
       color: var(--text-muted);
       white-space: pre-line;
       cursor: pointer;
+      display: -webkit-box;
+      -webkit-line-clamp: 3;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
     }
 
     .task-card-ac:hover { }
@@ -727,6 +731,10 @@
       color: var(--text-muted);
       white-space: pre-line;
       cursor: pointer;
+      display: -webkit-box;
+      -webkit-line-clamp: 3;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
     }
 
     .cm-label {
