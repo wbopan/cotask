@@ -1,3 +1,20 @@
+    // ===== CONSTANTS =====
+    const AUTOSAVE_DEBOUNCE_MS = 600;
+    const HEALTH_POLL_MS = 3000;
+    const STATE_POLL_MS = 5000;
+    const USAGE_POLL_MS = 120000;
+    const SSE_RECONNECT_MS = 3000;
+    const SELF_SAVE_SUPPRESS_PRE_MS = 2000;
+    const SELF_SAVE_SUPPRESS_POST_MS = 500;
+    const FLASH_DURATION_MS = 800;
+    const MODAL_FOCUS_DELAY_MS = 50;
+    const QUICK_BAR_FOCUS_DELAY_MS = 60;
+    const STATUS_DISPLAY_MS = 2000;
+    const STATUS_ERROR_DISPLAY_MS = 4000;
+    const BLUR_COLLAPSE_DELAY_MS = 150;
+    const MAX_RETRY_DELAY_MS = 8000;
+    const MS_PER_MINUTE = 60000;
+
     // ===== STATE =====
     let projectId = window.__projectId || null;
     let allProjects = []; // cached project state from /api/state
@@ -22,7 +39,7 @@
     }
 
     // Call this before any mutation to save the pre-mutation state
-    function saveForUndo() {
+    function saveForUndo() { // eslint-disable-line no-unused-vars
       const snap = lastCleanSnapshot || takeSnapshot();
       undoStack.push(snap);
       if (undoStack.length > MAX_UNDO) undoStack.shift();
@@ -34,7 +51,7 @@
       lastCleanSnapshot = takeSnapshot();
       hasChanges = true;
       if (saveTimeout) clearTimeout(saveTimeout);
-      saveTimeout = setTimeout(autoSave, 600);
+      saveTimeout = setTimeout(autoSave, AUTOSAVE_DEBOUNCE_MS);
       render();
       showStatus('Undone');
     }
@@ -67,7 +84,7 @@
       statusEl.textContent = msg;
       statusEl.classList.toggle('error', isError);
       statusEl.classList.add('visible');
-      setTimeout(() => statusEl.classList.remove('visible'), isError ? 4000 : 2000);
+      setTimeout(() => statusEl.classList.remove('visible'), isError ? STATUS_ERROR_DISPLAY_MS : STATUS_DISPLAY_MS);
     }
 
     function showErrorBanner(msg) {
@@ -91,8 +108,8 @@
             healthPollTimer = null;
             location.reload();
           }
-        } catch {}
-      }, 3000);
+        } catch { /* expected when server is down */ }
+      }, HEALTH_POLL_MS);
     }
 
     function showOfflineState() {
@@ -127,7 +144,7 @@
       return slug || ('section-' + uid());
     }
 
-    function uid() { return Date.now() + Math.random(); }
+    function uid() { return String(Date.now()) + Math.random().toString(36).slice(2); }
 
 
     async function focusGhosttyTab(title) {
@@ -156,7 +173,7 @@
 
     function isDeepEqual(a, b) {
       if (a === b) return true;
-      if (a == null || b == null || typeof a !== 'object' || typeof b !== 'object') return false;
+      if (a === null || a === undefined || b === null || b === undefined || typeof a !== 'object' || typeof b !== 'object') return false;
 
       const aKeys = Object.keys(a);
       const bKeys = Object.keys(b);
@@ -196,7 +213,7 @@
       setTimeout(() => {
         button.style.color = '';
         button.style.borderColor = '';
-      }, 800);
+      }, FLASH_DURATION_MS);
     }
 
     async function copyToClipboard(text, button, successMessage = 'Copied') {
@@ -289,10 +306,10 @@
           }
         }
 
-        const taskMatch = line.match(/^- \[([ xX\/\-])\]\s*(.*)$/);
+        const taskMatch = line.match(/^- \[([ xX/-])\]\s*(.*)$/);
         if (taskMatch) {
           if (inDesc) { currentSection.description = descSectionLines.join(' ').trim(); inDesc = false; descSectionLines = []; }
-          if (currentTask) { flushTask(currentTask, descLines); currentSection.tasks.push(currentTask); descLines = []; }
+          if (currentTask) { flushTask(currentTask, descLines); currentSection.tasks.push(currentTask); }
           const sym = taskMatch[1];
           let status = 'todo';
           if (sym === 'x' || sym === 'X') status = 'done';
@@ -308,7 +325,7 @@
         }
 
         if (currentTask && (line.startsWith('    ') || line.startsWith('\t'))) {
-          descLines.push(line.replace(/^    |\t/, ''));
+          descLines.push(line.replace(/^[ ]{4}|\t/, ''));
           continue;
         }
 
@@ -381,11 +398,6 @@
       return c;
     }
 
-    function pctDone(tasks) {
-      if (tasks.length === 0) return 0;
-      return Math.round((countByStatus(tasks).done / tasks.length) * 100);
-    }
-
     // ===== RENDER =====
     function render() {
       renderSidebar();
@@ -417,7 +429,7 @@
       render();
       const spring = 'cubic-bezier(0.22, 1, 0.36, 1)';
       document.querySelectorAll('[data-flip-key]').forEach(el => {
-        if (skipTaskId != null && el.dataset.taskId === String(skipTaskId)) return;
+        if (skipTaskId !== null && skipTaskId !== undefined && el.dataset.taskId === String(skipTaskId)) return;
         const old = oldRects.get(el.dataset.flipKey);
         if (old) flipAnimate(el, old, spring);
       });
@@ -497,7 +509,6 @@
         sections.forEach(section => {
           if (!section.name) return; // skip unnamed default section in list
           const stats = countByStatus(section.tasks);
-          const total = section.tasks.length;
           const isActive = activeSectionId === section.id;
 
           const item = document.createElement('div');
@@ -509,9 +520,9 @@
               <span class="section-item-count">${stats.ongoing + stats.todo}</span>
             </div>
             <div class="section-item-bar">
-              ${total > 0 ? `
-                <div class="done" style="width:${(stats.done/total)*100}%"></div>
-                <div class="ongoing" style="width:${(stats.ongoing/total)*100}%"></div>
+              ${section.tasks.length > 0 ? `
+                <div class="done" style="width:${(stats.done/section.tasks.length)*100}%"></div>
+                <div class="ongoing" style="width:${(stats.ongoing/section.tasks.length)*100}%"></div>
               ` : ''}
             </div>
             <div class="section-item-counts">
@@ -768,7 +779,7 @@
 
         let timeText = 'off';
         if (session.status !== 'notfound' && session.stateTs) {
-          const mins = Math.max(1, Math.floor((Date.now() - session.stateTs) / 60000));
+          const mins = Math.max(1, Math.floor((Date.now() - session.stateTs) / MS_PER_MINUTE));
           timeText = mins < 60 ? `${mins}m` : `${Math.floor(mins / 60)}h`;
         }
 
@@ -836,7 +847,7 @@
           const data = JSON.parse(e.dataTransfer.getData('application/json'));
           const srcSection = sections.find(s => s.id === data.sectionId);
           if (!srcSection) return;
-          const taskIdx = srcSection.tasks.findIndex(t => t.id == data.taskId);
+          const taskIdx = srcSection.tasks.findIndex(t => t.id === data.taskId);
           if (taskIdx === -1) return;
           const task = srcSection.tasks[taskIdx];
 
@@ -850,7 +861,7 @@
             // Insert before a card → same section as that card, before it
             const dstSection = sections.find(s => s.id === insertBefore.dataset.sectionId);
             if (dstSection) {
-              const bIdx = dstSection.tasks.findIndex(t => t.id == parseFloat(insertBefore.dataset.taskId));
+              const bIdx = dstSection.tasks.findIndex(t => t.id === insertBefore.dataset.taskId);
               if (bIdx !== -1) dstSection.tasks.splice(bIdx, 0, task);
               else dstSection.tasks.push(task);
             } else {
@@ -883,7 +894,7 @@
 
           markChanged();
           animatedRender(task.id);
-        } catch (err) {}
+        } catch { /* invalid drag data */ }
       });
     }
 
@@ -981,7 +992,7 @@
         render();
       });
       $('mStatus').addEventListener('change', () => { $('mStatusIcon').innerHTML = statusIcon($('mStatus').value); });
-      setTimeout(() => $('mTitle').focus(), 50);
+      setTimeout(() => $('mTitle').focus(), MODAL_FOCUS_DELAY_MS);
     }
 
     function openEditTaskModal(task, section) {
@@ -1066,7 +1077,7 @@
         btn.style.borderColor = 'var(--status-done)';
         setTimeout(() => { btn.style.color = ''; btn.style.borderColor = ''; }, 1000);
       });
-      setTimeout(() => $('mTitle').focus(), 50);
+      setTimeout(() => $('mTitle').focus(), MODAL_FOCUS_DELAY_MS);
     }
 
     function editSectionModal(section) {
@@ -1086,7 +1097,7 @@
         markChanged();
         render();
       });
-      setTimeout(() => $('mSectionName').focus(), 50);
+      setTimeout(() => $('mSectionName').focus(), MODAL_FOCUS_DELAY_MS);
     }
 
     // ===== QUICK CREATE BAR =====
@@ -1097,7 +1108,7 @@
 
     function expandQuickBar() {
       quickBar.classList.add('expanded');
-      setTimeout(() => quickInput.focus(), 60);
+      setTimeout(() => quickInput.focus(), QUICK_BAR_FOCUS_DELAY_MS);
     }
 
     function collapseQuickBar() {
@@ -1130,7 +1141,7 @@
       if (quickCreateKeepOpen) { quickCreateKeepOpen = false; return; }
       setTimeout(() => {
         if (!quickBar.contains(document.activeElement)) collapseQuickBar();
-      }, 150);
+      }, BLUR_COLLAPSE_DELAY_MS);
     });
 
     quickInput.addEventListener('keydown', (e) => {
@@ -1150,7 +1161,7 @@
       collapseQuickBar();
       openNewTaskModal(sections[0], 'canceled');
       if (desc) {
-        setTimeout(() => { const t = $('mTitle'); if (t) t.value = desc; }, 60);
+        setTimeout(() => { const t = $('mTitle'); if (t) t.value = desc; }, QUICK_BAR_FOCUS_DELAY_MS);
       }
     });
 
@@ -1172,7 +1183,7 @@
         markChanged();
         render();
       });
-      setTimeout(() => $('mSectionName').focus(), 50);
+      setTimeout(() => $('mSectionName').focus(), MODAL_FOCUS_DELAY_MS);
     });
 
     // ===== API I/O =====
@@ -1187,10 +1198,10 @@
 
       hasChanges = true;
       if (saveTimeout) clearTimeout(saveTimeout);
-      saveTimeout = setTimeout(autoSave, 600);
+      saveTimeout = setTimeout(autoSave, AUTOSAVE_DEBOUNCE_MS);
     }
 
-    async function autoSave() {
+    let autoSave = async function() {
       if (!projectId || !hasChanges || isSaving) return;
       const md = toMarkdown();
       if (md === lastSavedMarkdown) {
@@ -1220,7 +1231,7 @@
         }
         saveRetryCount++;
         if (saveRetryCount <= MAX_SAVE_RETRIES) {
-          const delay = Math.min(1000 * Math.pow(2, saveRetryCount - 1), 8000);
+          const delay = Math.min(1000 * Math.pow(2, saveRetryCount - 1), MAX_RETRY_DELAY_MS);
           showStatus(`Save failed, retrying in ${delay / 1000}s...`, true);
           setTimeout(() => { isSaving = false; autoSave(); }, delay);
           return;
@@ -1240,7 +1251,7 @@
         if (!res.ok) return;
         usageData = await res.json();
         renderUsage();
-      } catch {}
+      } catch { /* usage fetch is best-effort */ }
     }
 
     function renderUsage() {
@@ -1256,10 +1267,10 @@
       if (usageData.seven_day) {
         items.push(renderUsageBar('7d Total', usageData.seven_day));
       }
-      if (usageData.seven_day_sonnet?.utilization != null) {
+      if (usageData.seven_day_sonnet?.utilization !== null && usageData.seven_day_sonnet?.utilization !== undefined) {
         items.push(renderUsageBar('7d Sonnet', usageData.seven_day_sonnet));
       }
-      if (usageData.seven_day_opus?.utilization != null) {
+      if (usageData.seven_day_opus?.utilization !== null && usageData.seven_day_opus?.utilization !== undefined) {
         items.push(renderUsageBar('7d Opus', usageData.seven_day_opus));
       }
       $('usageContent').innerHTML = items.join('');
@@ -1313,18 +1324,18 @@
       if (!projectId) return;
       try {
         let content = cachedContent;
-        if (content == null) {
+        if (content === null || content === undefined) {
           await fetchState();
           content = (allProjects.find(p => p.id === projectId) || {}).content ?? null;
         }
-        if (content == null) throw new Error('TASKS.md not found');
+        if (content === null || content === undefined) throw new Error('TASKS.md not found');
         lastSavedMarkdown = content;
 
         let parsed;
         try {
           parsed = parseTasksMd(content);
         } catch (parseErr) {
-          throw new Error('TASKS.md has invalid format: ' + parseErr.message);
+          throw new Error('TASKS.md has invalid format: ' + parseErr.message, { cause: parseErr });
         }
 
         const oldSlugs = silent ? new Set(sections.flatMap(s => s.tasks).map(t => t.slug).filter(Boolean)) : null;
@@ -1417,13 +1428,13 @@
               // ignore for now; polling will retry
             }
           }
-        } catch {}
+        } catch { /* malformed SSE data */ }
       };
       fileWatchSource.onerror = () => {
         // EventSource auto-reconnects; just clean up state
         fileWatchSource.close();
         fileWatchSource = null;
-        setTimeout(connectFileWatch, 3000);
+        setTimeout(connectFileWatch, SSE_RECONNECT_MS);
       };
     }
 
@@ -1434,7 +1445,7 @@
         await fetchState();
         const entry = allProjects.find(p => p.id === projectId);
         await loadProject({ cachedContent: entry?.content ?? null });
-      } catch {}
+      } catch { /* reload failed, user can retry */ }
     });
 
     async function switchProject(newProjectId) {
@@ -1490,12 +1501,12 @@
       connectFileWatch();
     }
 
-    // Patch autoSave to suppress self-triggered watch events
-    const _origAutoSave = autoSave;
+    // Wrap autoSave to suppress self-triggered watch events
+    const _baseAutoSave = autoSave;
     autoSave = async function() {
-      selfSaveSuppress = Date.now() + 2000; // suppress before PUT to cover SSE race
-      await _origAutoSave();
-      selfSaveSuppress = Date.now() + 500; // refresh window after completion
+      selfSaveSuppress = Date.now() + SELF_SAVE_SUPPRESS_PRE_MS; // suppress before PUT to cover SSE race
+      await _baseAutoSave();
+      selfSaveSuppress = Date.now() + SELF_SAVE_SUPPRESS_POST_MS; // refresh window after completion
     };
 
     fetchState().then(() => {
@@ -1515,8 +1526,8 @@
       sessionMap = initialSessionMap;
       lastSessionSnapshot = JSON.parse(JSON.stringify(initialSessionMap));
       loadProject({ cachedContent: projEntry?.content ?? null }).then(() => {
-        setInterval(() => { fetchState().catch(() => {}); }, 5000);
-        setInterval(fetchUsage, 120000);
+        setInterval(() => { fetchState().catch(() => {}); }, STATE_POLL_MS);
+        setInterval(fetchUsage, USAGE_POLL_MS);
         connectFileWatch();
       });
     }).catch(() => {

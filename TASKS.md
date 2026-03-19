@@ -177,24 +177,19 @@ Task Management 技能的任务跟踪 — 一个看板 dashboard，用于维护 
 - [-] 拆分 marketplace 和插件为独立仓库 #split-marketplace-repo
     当前 marketplace 配置和插件代码混在同一仓库。拆为两个独立 repo：一个是插件本体（代码、skill、commands），另一个是 marketplace registry（marketplace.json、发布元数据）。插件 repo 通过 git URL 被 marketplace 引用。
     AC: 插件代码和 marketplace 配置分别在两个独立 git 仓库中维护；marketplace repo 通过 URL 引用插件 repo；两边可独立发版。
-- [/] Dashboard 快速创建任务输入框 #dashboard-quick-create-cli
+- [x] Dashboard 快速创建任务输入框 #dashboard-quick-create-cli
     在 dashboard 中添加一个输入框，用户口头描述任务后输入文字，点击按钮即可复制 CLI 命令 `cd {projectpath} && claude "/creating-task {description}"` 到剪贴板。考虑放置位置：可以替代或增强现有 FAB 按钮的流程，点击 FAB 后弹出输入框而非直接打开编辑 modal。
     AC: dashboard 中有输入框可输入任务描述；点击按钮后 `cd {实际项目路径} && claude "/creating-task {用户输入}"` 被复制到剪贴板；交互流畅不打断当前浏览。
 - [x] 侧边栏项目卡片只显示活跃项目状态 #sidebar-filter-active-stats
     Project Sidebar 卡片下方的筛选状态指标只显示 ongoing 和 todo（pending）项目的统计，忽略 backlog 和 done 中的项目状态。
     CM: Section 列表的 mini-stat 图标从 STATUS_ORDER（4 种状态）改为只显示 ongoing 和 todo；section 计数从 total 改为 ongoing+todo。项目级 buildProjStatsHtml 已是 ongoing+todo 无需修改。
     AC: 侧边栏项目卡片的状态统计只包含 ongoing 和 todo 任务数量；backlog 和 done 的任务不计入显示的数字。
-- [ ] 拆分 dashboard.js 为功能模块 #split-dashboard-js
-    dashboard.js 目前 1547 行，包含 12 个逻辑区域（state、parse、serialize、render、drag-drop、modals、API I/O、SSE 等）。按已有的 `// =====` 分界线拆为独立 JS 文件，通过 HTML script 标签按序加载或使用简单的模块模式共享状态。
-    AC: dashboard.js 拆分为多个文件，每个文件不超过 400 行；功能不变；无构建步骤。
-- [ ] 拆分 dashboard.css 为功能模块 #split-dashboard-css
-    dashboard.css 目前 1380 行。按组件拆分为独立 CSS 文件（layout、sidebar、board、cards、modals、animations 等），在 HTML 中按序引入。
-    AC: dashboard.css 拆分为多个文件，每个文件职责单一；样式不变；无构建步骤。
-- [ ] 提取 server.js 共享工具函数 #extract-server-utils
-    server.js 中的 encodeProjectPath、discoverProjects、buildSessionMap 等工具函数与路由逻辑混杂。提取到 server/lib/ 下的独立模块，server.js 只保留路由定义和中间件。
-    AC: server.js 只包含路由和中间件；工具函数在 server/lib/ 中独立导出；功能不变。
-- [ ] 代码质量审查与修复 #code-quality-review
+- [ ] 重新设计应用图标 #redesign-app-icon
+    基于 Lucide icon badge-check 设计新图标，替换当前的八边形图标。需要符合 Apple Human Interface Guidelines（圆角正方形、光影层次、适配 dark mode）和 Chrome Web Store / PWA icon 最佳实践（清晰轮廓、maskable safe zone、多尺寸适配 192/512）。输出 SVG 源文件及 PNG 导出（icon-192.png、icon-512.png、icon-maskable-192.png、icon-maskable-512.png）。
+    AC: 图标基于 badge-check 造型；符合 Apple 和 Chrome icon 设计规范（safe zone、圆角、清晰辨识度）；所有尺寸文件已替换且 dashboard/PWA manifest 显示正确。
+- [x] 代码质量审查与修复 #code-quality-review
     全面检查剩余文件的代码实践：消除魔术数字和硬编码值（提取为常量）、移除未使用的变量和死代码、统一命名风格、确保错误处理完整、添加必要的 JSDoc 注释。
+    CM: Extracted 21 magic numbers to named constants across server.js (6) and dashboard.js (15). Removed dead code (unused escapeHtml, pctDone, total var, duplicate imports). Fixed all ==/!= to strict equality. Fixed uid() to return string. Fixed regex lint issues. Resolved no-func-assign by using let for autoSave. Added ESLint flat config with eqeqeq/no-unused-vars/no-undef rules — passes with 0 errors.
     AC: 无未使用变量；魔术数字提取为命名常量；命名风格一致；ESLint 无 error 级别警告。
 - [x] 简化后端 API 为两个端点 #simplify-backend-api
     当前后端有多个冗余端点（/api/projects、/api/tasks/:id、/api/sessions/:id、/api/heartbeat），数据模型混乱（stats 可从 content 算出、session 数据来源不统一）。合并为两个核心端点：(1) GET /api/state — 返回所有项目的完整状态（content、task→session 映射），支持增量更新避免重复传输未变化的 content；(2) PUT /api/tasks/:id — 更新单个项目的 TASKS.md。前端轮询 /api/state 一个请求刷新所有数据，不再需要多个并行请求。

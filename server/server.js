@@ -15,6 +15,12 @@ const ASSETS_DIR = path.join(import.meta.dirname, 'assets');
 let server;
 let lastActivityAt = Date.now();
 const IDLE_SHUTDOWN_MS = 24 * 60 * 60 * 1000;
+const GREP_MAX_BUFFER = 1024 * 1024;
+const SSE_DEBOUNCE_MS = 300;
+const OSASCRIPT_TIMEOUT_MS = 5000;
+const SHUTDOWN_FORCE_TIMEOUT_MS = 5000;
+const IDLE_CHECK_INTERVAL_MS = 10 * 60 * 1000;
+const JSONL_SCAN_LINES = 20;
 const sseConnections = new Set();
 
 app.use((req, _res, next) => {
@@ -35,7 +41,7 @@ function loadHeartbeats() {
     const data = fsSync.readFileSync(HEARTBEAT_FILE, 'utf8');
     const obj = JSON.parse(data);
     for (const [k, v] of Object.entries(obj)) heartbeats.set(k, v);
-  } catch {}
+  } catch { /* ignored */ }
 }
 
 function saveHeartbeats() {
@@ -86,13 +92,13 @@ async function discoverProjects() {
     let realPath = null;
     try {
       const content = await fs.readFile(path.join(projDir, jsonlFiles[0]), 'utf8');
-      for (const line of content.split('\n').slice(0, 20)) {
+      for (const line of content.split('\n').slice(0, JSONL_SCAN_LINES)) {
         try {
           const evt = JSON.parse(line.trim());
           if (evt.cwd) { realPath = evt.cwd; break; }
-        } catch {}
+        } catch { /* ignored */ }
       }
-    } catch {}
+    } catch { /* ignored */ }
     if (!realPath) continue;
 
     // Verify: encode the real path and check it matches this dir name
@@ -164,16 +170,16 @@ async function buildSessionMap(projectId) {
   try {
     const { stdout } = await execFileAsync('grep', [
       '-r', '--include=*.jsonl', '-h', '"custom-title"', projectDir,
-    ], { maxBuffer: 1024 * 1024 });
+    ], { maxBuffer: GREP_MAX_BUFFER });
     for (const line of stdout.split('\n')) {
       try {
         const evt = JSON.parse(line.trim());
         if (evt.type === 'custom-title' && evt.customTitle && evt.sessionId) {
           sessionMap.set(evt.sessionId, evt.customTitle);
         }
-      } catch {}
+      } catch { /* ignored */ }
     }
-  } catch {}
+  } catch { /* ignored */ }
 
   const result = {};
   for (const [sessionId, customTitle] of sessionMap) {
@@ -194,7 +200,7 @@ async function buildSessionMap(projectId) {
           try {
             const { stdout } = await execFileAsync('pgrep', ['-P', String(hb.pid)]);
             childProcesses = stdout.trim().split('\n').filter(Boolean).length;
-          } catch {}
+          } catch { /* ignored */ }
         }
       } else {
         heartbeats.delete(sessionId);
@@ -233,7 +239,7 @@ app.get('/api/state', async (req, res) => {
         else if (/^- \[x\]/i.test(line)) { stats.done++; stats.total++; }
         else if (/^- \[-\]/.test(line)) { stats.backlog++; stats.total++; }
       }
-    } catch {}
+    } catch { /* ignored */ }
 
     let sessionMap = null;
     let sessions = { running: 0, idle: 0, permission: 0, 'bg-active': 0 };
@@ -315,10 +321,6 @@ app.post('/api/focus-ghostty-tab', async (req, res) => {
     return res.status(400).json({ error: 'title is required' });
   }
 
-  const { execFile } = await import('child_process');
-  const { promisify } = await import('util');
-  const execFileAsync = promisify(execFile);
-
   // Use Ghostty 1.3.0 native AppleScript API instead of System Events UI hack
   const escaped = title.replace(/\\/g, '\\\\').replace(/"/g, '\\"');
   const script = `
@@ -338,7 +340,7 @@ tell application "Ghostty"
 end tell`;
 
   try {
-    const { stdout } = await execFileAsync('osascript', ['-e', script], { timeout: 5000 });
+    const { stdout } = await execFileAsync('osascript', ['-e', script], { timeout: OSASCRIPT_TIMEOUT_MS });
     const result = stdout.trim();
     if (result === 'focused') {
       res.json({ ok: true });
@@ -378,8 +380,8 @@ app.get('/api/watch/:projectId', async (req, res) => {
       debounceTimer = setTimeout(() => {
         try {
           res.write('data: {"changed":true}\n\n');
-        } catch {}
-      }, 300);
+        } catch { /* ignored */ }
+      }, SSE_DEBOUNCE_MS);
     });
   } catch (err) {
     res.write(`data: {"error":"watch failed: ${err.message}"}\n\n`);
@@ -472,10 +474,6 @@ app.get('/api/health', (req, res) => {
   res.json({ ok: true });
 });
 
-function escapeHtml(str) {
-  return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
-}
-
 // Global error handler — catch unhandled route errors
 app.use((err, req, res, _next) => {
   console.error('Unhandled error:', err);
@@ -485,7 +483,7 @@ app.use((err, req, res, _next) => {
 function gracefulShutdown() {
   console.log('[octask] Idle for 24h — shutting down');
   for (const res of sseConnections) {
-    try { res.end(); } catch {}
+    try { res.end(); } catch { /* connection closed */ }
   }
   sseConnections.clear();
   if (!server) {
@@ -493,14 +491,14 @@ function gracefulShutdown() {
     return;
   }
   server.close(() => process.exit(0));
-  setTimeout(() => process.exit(0), 5000);
+  setTimeout(() => process.exit(0), SHUTDOWN_FORCE_TIMEOUT_MS);
 }
 
 setInterval(() => {
   if (Date.now() - lastActivityAt >= IDLE_SHUTDOWN_MS) {
     gracefulShutdown();
   }
-}, 10 * 60 * 1000);
+}, IDLE_CHECK_INTERVAL_MS);
 
 process.on('SIGTERM', gracefulShutdown);
 process.on('SIGINT', gracefulShutdown);
