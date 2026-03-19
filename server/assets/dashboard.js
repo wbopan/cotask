@@ -1076,10 +1076,43 @@
       setTimeout(() => $('mSectionName').focus(), 50);
     }
 
-    // ===== GLOBAL ADD TASK =====
-    $('fabAddTask').addEventListener('click', () => {
+    // ===== QUICK CREATE BAR =====
+    const quickInput = $('quickCreateInput');
+    const quickBar = $('quickCreateBar');
+
+    function updateQuickBarState() {
+      quickBar.classList.toggle('has-content', quickInput.value.trim().length > 0);
+    }
+
+    quickInput.addEventListener('input', updateQuickBarState);
+
+    quickInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        $('quickCreateCopy').click();
+      }
+    });
+
+    $('quickCreateCopy').addEventListener('click', async () => {
+      const desc = quickInput.value.trim();
+      if (!desc) { showStatus('Enter a task description first', true); quickInput.focus(); return; }
+      const projectPath = getCurrentProjectPath();
+      if (!projectPath) { showStatus('Project path unavailable', true); return; }
+      const cmd = `cd ${shellQuote(projectPath)} && claude "/creating-task ${desc.replace(/"/g, '\\"')}"`;
+      await copyToClipboard(cmd, $('quickCreateCopy'), 'Command copied — paste in terminal');
+      quickInput.value = '';
+      updateQuickBarState();
+    });
+
+    $('quickCreateEditor').addEventListener('click', () => {
       if (!sections.length) return;
+      const desc = quickInput.value.trim();
       openNewTaskModal(sections[0], 'canceled');
+      if (desc) {
+        setTimeout(() => { const t = $('mTitle'); if (t) t.value = desc; }, 60);
+      }
+      quickInput.value = '';
+      updateQuickBarState();
     });
 
     // ===== ADD SECTION =====
