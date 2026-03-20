@@ -213,8 +213,9 @@ Task Management 技能的任务跟踪 — 一个看板 dashboard，用于维护 
 - [x] 将 TASKS.md 位置改回项目根目录 #revert-tasks-location
     撤回 #move-tasks-to-dotclaude 的改动，将 TASKS.md 默认位置从 `.claude/TASKS.md` 改回项目根目录。原因：`.claude/` 目录下的文件每次修改都需要用户授权，影响使用体验。需要更新 server 的项目发现、路径 helper、skill 引用、dashboard 空状态提示、.gitignore 等。
     AC: Octask 默认在项目根目录读写 TASKS.md；server、skill、docs 中的路径引用指向根目录；修改 TASKS.md 不再触发权限提示。
-- [/] Dashboard 响应式设计适配手机屏幕 #responsive-mobile-layout
+- [x] Dashboard 响应式设计适配手机屏幕 #responsive-mobile-layout
     当前 dashboard 在窗口缩小到手机尺寸时布局溢出或无法使用。需要添加响应式断点，使 sidebar 可折叠/隐藏，看板列在小屏幕上纵向堆叠或可横向滑动，卡片和操作按钮在触控设备上可用。
+    CM: 三个基于实际布局计算的响应式断点：≤1390px column picker 出现隐藏 Done（sidebar 350 + 4×260）；≤1130px sidebar 变为 overlay（350 + 3×260）；≤780px Backlog 也隐藏（3×260）。sidebar 用 transform slide 动画，column picker 用 dropdown checkbox，偏好存 localStorage。用 .project-loaded class 替代 inline style.display 以兼容 CSS media query。
     AC: 浏览器窗口缩小到手机宽度（≤480px）时，dashboard 显示有意义的内容且可正常操作；sidebar 可折叠或隐藏；任务卡片可读且可交互。
 - [x] 精确识别后台子进程类型，过滤 caffeinate 等系统进程 #fix-subprocess-detection
     当前 `pgrep -P <pid>` 统计所有子进程，导致 caffeinate（Claude Code 自带防休眠）被误计为后台任务，session 被错误标记为 `bg-active`。应改为扫描 `/private/tmp/claude-501/{projectPath}/{sessionId}/tasks/` 下的 output 文件来精确识别真正的后台任务（symlink = subagent，普通文件 = background bash），并在 API 响应中返回每个后台任务的 output 路径列表。
