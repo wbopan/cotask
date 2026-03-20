@@ -17,7 +17,7 @@ Do NOT say: "Should I", "Want me to", "Shall I", "Would you like me to", "Let me
 
 ### 1. Read TASKS.md
 
-Read `.claude/TASKS.md`. If it doesn't exist, create it from the template at `${CLAUDE_PLUGIN_ROOT}/skills/octask/references/template.md` (ask the user for a project title first).
+Read `TASKS.md` (at the project root). If it doesn't exist, create it from the template at `${CLAUDE_PLUGIN_ROOT}/skills/octask/references/template.md` (ask the user for a project title first).
 
 ### 2. Write the entry
 

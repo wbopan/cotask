@@ -8,7 +8,7 @@ description: Start working on a task — marks it ongoing in TASKS.md and begins
 - Args: {{ARGS}}
 - Current TASKS.md:
 
-!`cat .claude/TASKS.md 2>/dev/null || echo "No .claude/TASKS.md found in current directory"`
+!`cat TASKS.md 2>/dev/null || echo "No TASKS.md found in current directory"`
 
 ## What this command does
 

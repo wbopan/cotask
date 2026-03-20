@@ -171,8 +171,9 @@ Task Management 技能的任务跟踪 — 一个看板 dashboard，用于维护 
     当前 creating-task skill 文本不够详细，执行该命令的模型可能没有读过 /octask skill，缺少 TASKS.md 格式规范（缩进、slug 位置、AC 格式等）。同时模型倾向于做大量代码阅读才创建任务，应限制为只读 TASKS.md。
     CM: 重写 SKILL.md：内联完整的任务格式示例（slug、4-space 缩进、AC 行）和状态符号表，workflow 简化为"Read TASKS.md → Write entry → Confirm"，明确禁止读取其他文件。通过 2 轮 eval（6 runs each）验证：skill 版本正确检测重复任务、格式合规、token 效率高 18%。
     AC: creating-task skill 内联完整的任务格式规范和示例，不依赖 /octask skill；模型执行时只读 TASKS.md 不探索代码库。
-- [-] 迁移到现代技术栈 #modernize-stack
+- [x] 迁移到现代技术栈 #modernize-stack
     将运行时从 Node.js + npm 迁移到 Bun，利用其内置 bundler、test runner 和更快的启动速度。移除 Express 依赖，改用 Bun 原生 HTTP server。更新 package.json scripts、post-install hook 和 CI 配置。
+    CM: 重写 server.js 从 Express 迁移到 Bun.serve()：手动路由匹配替代 Express router，Bun.file() 替代 express.static，Response.json() 替代 res.json()，native fetch() 替代 https 模块做 usage proxy，ReadableStream 替代 res.write() 做 SSE。移除 Express 依赖（server/package.json 清空 dependencies）。更新 post-install.sh（无需 npm install）、dashboard skill、CLAUDE.md、README、CONTRIBUTING.md。删除 server/node_modules 和 server/package-lock.json。
     AC: 项目使用 Bun 运行和安装依赖；server 启动正常且功能不变；不再依赖 node/npm。
 - [x] Dashboard 快速创建任务输入框 #dashboard-quick-create-cli
     在 dashboard 中添加一个输入框，用户口头描述任务后输入文字，点击按钮即可复制 CLI 命令 `cd {projectpath} && claude "/creating-task {description}"` 到剪贴板。考虑放置位置：可以替代或增强现有 FAB 按钮的流程，点击 FAB 后弹出输入框而非直接打开编辑 modal。
@@ -201,13 +202,17 @@ Task Management 技能的任务跟踪 — 一个看板 dashboard，用于维护 
     当前 marketplace 配置和插件代码混在同一仓库。拆为两个独立 repo：一个是插件本体（代码、skill、commands），另一个是 marketplace registry（marketplace.json、发布元数据）。插件 repo 通过 git URL 被 marketplace 引用。
     CM: 创建 wbopan/octask-marketplace 公开仓库，marketplace.json 使用 `{"source": "github", "repo": "wbopan/octask"}` 引用插件 repo。从插件 repo 删除 marketplace.json（只保留 plugin.json）。更新 known_marketplaces.json 指向新 marketplace repo，重新 clone marketplace 到本地缓存，同步 plugin cache。
     AC: 插件代码和 marketplace 配置分别在两个独立 git 仓库中维护；marketplace repo 通过 URL 引用插件 repo；两边可独立发版。
-- [ ] 改善 onboarding 体验 #improve-onboarding
+- [/] 改善 onboarding 体验 #improve-onboarding
     当前没有 TASKS.md 的项目在 dashboard 中显示空白或报错，缺乏引导。README 的安装和上手说明也不够清晰完整。需要：(1) dashboard 在无 TASKS.md 时显示友好的空状态引导页（说明 Octask 是什么、如何创建第一个 TASKS.md）；(2) 改善 README 的 onboarding 流程，让新用户能快速理解和上手。
     AC: 无 TASKS.md 的项目在 dashboard 中显示有意义的空状态引导内容而非空白；README 包含清晰的 getting started 步骤，新用户按步骤操作即可上手。
 - [x] Move default TASKS.md location to .claude/ #move-tasks-to-dotclaude
     Change the default location where Octask looks for and creates TASKS.md from the project root to `.claude/TASKS.md`. This keeps task tracking files together with other Claude config and out of the project's visible root. Requires updating: server project discovery, skill references, dashboard parser paths, .gitignore conventions, and the octask skill template.
     AC: Octask reads and writes TASKS.md from `.claude/TASKS.md` by default; existing references in skills, server, and docs point to the new location; projects with root-level TASKS.md still work via fallback or migration.
     CM: Server now uses `.claude/TASKS.md` exclusively (no root fallback). Added `tasksFileExists()`, `tasksAbsolute()`, `tasksDir()` helpers. Updated all 4 server endpoints (discoverProjects, /api/state, PUT /api/tasks, /api/watch). PUT creates `.claude/` dir if needed. Updated all 3 skill files with new path. Updated CLAUDE.md, README.md, dashboard.js empty state, .gitignore (removed root TASKS.md entry).
-- [ ] Dashboard 响应式设计适配手机屏幕 #responsive-mobile-layout
+- [x] 将 TASKS.md 位置改回项目根目录 #revert-tasks-location
+    撤回 #move-tasks-to-dotclaude 的改动，将 TASKS.md 默认位置从 `.claude/TASKS.md` 改回项目根目录。原因：`.claude/` 目录下的文件每次修改都需要用户授权，影响使用体验。需要更新 server 的项目发现、路径 helper、skill 引用、dashboard 空状态提示、.gitignore 等。
+    CM: Server 路径 helper 改回根目录（移除 TASKS_DOTCLAUDE，tasksDir 返回 projectPath，移除 PUT 的 mkdir）。3 个 skill 文件路径引用改为根目录。dashboard.html 空状态提示移除 .claude/ 前缀。README 和 CLAUDE.md 同步更新。.gitignore 重新添加根 TASKS.md。文件从 .claude/TASKS.md 复制到根目录。
+    AC: Octask 默认在项目根目录读写 TASKS.md；server、skill、docs 中的路径引用指向根目录；修改 TASKS.md 不再触发权限提示。
+- [/] Dashboard 响应式设计适配手机屏幕 #responsive-mobile-layout
     当前 dashboard 在窗口缩小到手机尺寸时布局溢出或无法使用。需要添加响应式断点，使 sidebar 可折叠/隐藏，看板列在小屏幕上纵向堆叠或可横向滑动，卡片和操作按钮在触控设备上可用。
     AC: 浏览器窗口缩小到手机宽度（≤480px）时，dashboard 显示有意义的内容且可正常操作；sidebar 可折叠或隐藏；任务卡片可读且可交互。

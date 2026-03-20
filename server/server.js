@@ -18,23 +18,22 @@ const SHUTDOWN_FORCE_TIMEOUT_MS = 5000;
 const IDLE_CHECK_INTERVAL_MS = 10 * 60 * 1000;
 const JSONL_SCAN_LINES = 20;
 const TASKS_FILENAME = 'TASKS.md';
-const TASKS_DOTCLAUDE = path.join('.claude', TASKS_FILENAME);
 const sseConnections = new Set();
 
-// Check if .claude/TASKS.md exists for a project.
+// Check if TASKS.md exists for a project (root level).
 async function tasksFileExists(projectPath) {
   try {
-    await fs.access(path.join(projectPath, TASKS_DOTCLAUDE));
+    await fs.access(path.join(projectPath, TASKS_FILENAME));
     return true;
   } catch { return false; }
 }
 
 function tasksAbsolute(projectPath) {
-  return path.join(projectPath, TASKS_DOTCLAUDE);
+  return path.join(projectPath, TASKS_FILENAME);
 }
 
 function tasksDir(projectPath) {
-  return path.join(projectPath, '.claude');
+  return projectPath;
 }
 
 // Heartbeat store: sessionId → { state, ts, pid }
@@ -324,7 +323,6 @@ async function handlePutTasks(projectId, req) {
 
   const filePath = tasksAbsolute(project.path);
   try {
-    await fs.mkdir(path.dirname(filePath), { recursive: true });
     await fs.writeFile(filePath, content, 'utf8');
   } catch (err) {
     return Response.json({ error: 'Failed to write TASKS.md: ' + err.message }, { status: 500 });
