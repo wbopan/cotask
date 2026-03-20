@@ -221,3 +221,7 @@ Task Management 技能的任务跟踪 — 一个看板 dashboard，用于维护 
     当前 `pgrep -P <pid>` 统计所有子进程，导致 caffeinate（Claude Code 自带防休眠）被误计为后台任务，session 被错误标记为 `bg-active`。应改为扫描 `/private/tmp/claude-501/{projectPath}/{sessionId}/tasks/` 下的 output 文件来精确识别真正的后台任务（symlink = subagent，普通文件 = background bash），并在 API 响应中返回每个后台任务的 output 路径列表。
     CM: buildSessionMap 中 pgrep -P 结果通过 ps 过滤 caffeinate 进程；新增 scanBackgroundTasks() 扫描 /tmp tasks 目录，用 lstat 区分 symlink(agent) vs file(bash)；API 响应增加 backgroundTasks 数组含 id/type/output 路径。
     AC: caffeinate 等系统子进程不再被计入 childProcesses；API 返回后台任务列表区分 subagent 和 background bash；仅有 caffeinate 子进程时 session 不被标记为 bg-active。
+- [x] 修复主面板项目名称不随项目切换更新 #fix-board-header-project-name
+    切换项目后，主面板（board area）顶部的项目名称仍显示上一个项目的名字，没有随项目切换而更新。
+    CM: 根因是 `window.__projectName`（服务端初始注入，固定不变）优先级高于 `allProjects` 动态查找。将 `dashboard.js:1503` 的 `||` 顺序反转，优先从 `allProjects` 按当前 `projectId` 查找名称。
+    AC: 在 sidebar 中切换项目后，board 顶部的项目名称立即更新为当前选中项目的名称。

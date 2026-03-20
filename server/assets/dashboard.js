@@ -1500,7 +1500,7 @@
           };
         }
 
-        const projectName = window.__projectName || (allProjects.find(p => p.id === projectId) || {}).name;
+        const projectName = (allProjects.find(p => p.id === projectId) || {}).name || window.__projectName;
         if (projectName) {
           document.title = `${projectName} — Octask`;
           $('boardProjectName').textContent = projectName;
