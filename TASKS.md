@@ -197,6 +197,13 @@ Task Management 技能的任务跟踪 — 一个看板 dashboard，用于维护 
     Project list 的 session capsule 统计（running/idle/permission）错误地包含了 backlog 和 done 任务的 session。
     CM: 在 server.js /api/state 的 session 聚合逻辑中，先从 content 提取 ongoing/todo 的 task slug 集合（匹配 `^- \[[ /]\]`），聚合时跳过不在集合中的 session。
     AC: 项目列表的 session 状态 capsule 只统计 ongoing 和 todo 任务的 session；done 和 backlog 任务的 session 不计入。
-- [/] 拆分 marketplace 和插件为独立仓库 #split-marketplace-repo
+- [x] 拆分 marketplace 和插件为独立仓库 #split-marketplace-repo
     当前 marketplace 配置和插件代码混在同一仓库。拆为两个独立 repo：一个是插件本体（代码、skill、commands），另一个是 marketplace registry（marketplace.json、发布元数据）。插件 repo 通过 git URL 被 marketplace 引用。
+    CM: 创建 wbopan/octask-marketplace 公开仓库，marketplace.json 使用 `{"source": "github", "repo": "wbopan/octask"}` 引用插件 repo。从插件 repo 删除 marketplace.json（只保留 plugin.json）。更新 known_marketplaces.json 指向新 marketplace repo，重新 clone marketplace 到本地缓存，同步 plugin cache。
     AC: 插件代码和 marketplace 配置分别在两个独立 git 仓库中维护；marketplace repo 通过 URL 引用插件 repo；两边可独立发版。
+- [ ] 改善 onboarding 体验 #improve-onboarding
+    当前没有 TASKS.md 的项目在 dashboard 中显示空白或报错，缺乏引导。README 的安装和上手说明也不够清晰完整。需要：(1) dashboard 在无 TASKS.md 时显示友好的空状态引导页（说明 Octask 是什么、如何创建第一个 TASKS.md）；(2) 改善 README 的 onboarding 流程，让新用户能快速理解和上手。
+    AC: 无 TASKS.md 的项目在 dashboard 中显示有意义的空状态引导内容而非空白；README 包含清晰的 getting started 步骤，新用户按步骤操作即可上手。
+- [ ] Dashboard 响应式设计适配手机屏幕 #responsive-mobile-layout
+    当前 dashboard 在窗口缩小到手机尺寸时布局溢出或无法使用。需要添加响应式断点，使 sidebar 可折叠/隐藏，看板列在小屏幕上纵向堆叠或可横向滑动，卡片和操作按钮在触控设备上可用。
+    AC: 浏览器窗口缩小到手机宽度（≤480px）时，dashboard 显示有意义的内容且可正常操作；sidebar 可折叠或隐藏；任务卡片可读且可交互。

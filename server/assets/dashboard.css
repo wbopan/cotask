@@ -394,8 +394,6 @@
       color: var(--accent);
     }
 
-    .sidebar-footer { display: none; }
-
     /* ===== BOARD ===== */
     .board-wrapper {
       flex: 1;
@@ -609,13 +607,14 @@
       cursor: pointer;
     }
 
-    .task-card-desc:hover { }
 
-    /* Shimmer effect for running session cards */
+    /* Shimmer effect for active session cards */
+    .task-card.session-running  { --shimmer-color: #4cb782; }
+    .task-card.session-bg-active { --shimmer-color: #5e6ad2; }
+
     .task-card.session-running .task-card-title,
-    .task-card.session-running .task-card-desc,
-    .task-card.session-running .task-card-ac {
-      background: linear-gradient(90deg, #1a1a1a 25%, #4cb782 45%, #4cb782 55%, #1a1a1a 75%);
+    .task-card.session-bg-active .task-card-title {
+      background: linear-gradient(90deg, #1a1a1a 25%, var(--shimmer-color) 45%, var(--shimmer-color) 55%, #1a1a1a 75%);
       background-size: 200% 100%;
       -webkit-background-clip: text;
       background-clip: text;
@@ -623,37 +622,17 @@
       animation: shimmer 5s linear infinite;
     }
     .task-card.session-running .task-card-desc,
-    .task-card.session-running .task-card-ac {
-      background: linear-gradient(90deg, #64748b 25%, #4cb782 45%, #4cb782 55%, #64748b 75%);
-      background-size: 200% 100%;
-      -webkit-background-clip: text;
-      background-clip: text;
-      -webkit-text-fill-color: transparent;
-      animation: shimmer 5s linear infinite;
-    }
-    .task-card.session-running .task-card-ac .ac-label {
-      -webkit-text-fill-color: initial;
-    }
-    /* Blue shimmer for background-active session cards */
-    .task-card.session-bg-active .task-card-title,
+    .task-card.session-running .task-card-ac,
     .task-card.session-bg-active .task-card-desc,
     .task-card.session-bg-active .task-card-ac {
-      background: linear-gradient(90deg, #1a1a1a 25%, #5e6ad2 45%, #5e6ad2 55%, #1a1a1a 75%);
+      background: linear-gradient(90deg, #64748b 25%, var(--shimmer-color) 45%, var(--shimmer-color) 55%, #64748b 75%);
       background-size: 200% 100%;
       -webkit-background-clip: text;
       background-clip: text;
       -webkit-text-fill-color: transparent;
       animation: shimmer 5s linear infinite;
     }
-    .task-card.session-bg-active .task-card-desc,
-    .task-card.session-bg-active .task-card-ac {
-      background: linear-gradient(90deg, #64748b 25%, #5e6ad2 45%, #5e6ad2 55%, #64748b 75%);
-      background-size: 200% 100%;
-      -webkit-background-clip: text;
-      background-clip: text;
-      -webkit-text-fill-color: transparent;
-      animation: shimmer 5s linear infinite;
-    }
+    .task-card.session-running .task-card-ac .ac-label,
     .task-card.session-bg-active .task-card-ac .ac-label {
       -webkit-text-fill-color: initial;
     }
@@ -685,8 +664,6 @@
       -webkit-box-orient: vertical;
       overflow: hidden;
     }
-
-    .task-card-ac:hover { }
 
     .slug-copy-btn {
       flex-shrink: 0;
@@ -1114,12 +1091,11 @@
     .status-bar.visible { opacity: 1; }
 
     /* ===== ERROR BANNER ===== */
-    .file-changed-banner {
+    .alert-banner {
       position: fixed;
       top: 0;
       left: 0;
       right: 0;
-      background: #b45309;
       color: #fff;
       padding: 8px 24px;
       font-size: 13px;
@@ -1127,12 +1103,11 @@
       display: flex;
       align-items: center;
       justify-content: space-between;
-      z-index: 401;
       transform: translateY(-100%);
       transition: transform 0.25s ease;
     }
-    .file-changed-banner.visible { transform: translateY(0); }
-    .file-changed-banner button {
+    .alert-banner.visible { transform: translateY(0); }
+    .alert-banner button {
       background: rgba(255,255,255,0.2);
       color: #fff;
       border: 1px solid rgba(255,255,255,0.3);
@@ -1141,36 +1116,10 @@
       cursor: pointer;
       border-radius: var(--radius-xs);
     }
-    .file-changed-banner button:hover { background: rgba(255,255,255,0.3); }
+    .alert-banner button:hover { background: rgba(255,255,255,0.3); }
 
-    .error-banner {
-      position: fixed;
-      top: 0;
-      left: 0;
-      right: 0;
-      background: #dc2626;
-      color: #fff;
-      padding: 8px 24px;
-      font-size: 13px;
-      font-weight: 500;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      z-index: 400;
-      transform: translateY(-100%);
-      transition: transform 0.25s ease;
-    }
-    .error-banner.visible { transform: translateY(0); }
-    .error-banner button {
-      background: rgba(255,255,255,0.2);
-      color: #fff;
-      border: 1px solid rgba(255,255,255,0.3);
-      padding: 4px 12px;
-      font-size: 12px;
-      cursor: pointer;
-      border-radius: var(--radius-xs);
-    }
-    .error-banner button:hover { background: rgba(255,255,255,0.3); }
+    .file-changed-banner { background: #b45309; z-index: 401; }
+    .error-banner { background: #dc2626; z-index: 400; }
 
     .status-bar.error {
       background: #dc2626;
@@ -1267,7 +1216,7 @@
       from { opacity: 0; transform: translateY(6px); }
       to { opacity: 1; transform: none; }
     }
-    .project-expanded.animate-enter {
+    .project-expanded.animate-expand {
       animation: fade-up 0.3s ease both;
     }
 

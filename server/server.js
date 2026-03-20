@@ -44,7 +44,17 @@ function loadHeartbeats() {
   } catch { /* ignored */ }
 }
 
+let saveHeartbeatsTimer = null;
 function saveHeartbeats() {
+  if (saveHeartbeatsTimer) return;
+  saveHeartbeatsTimer = setTimeout(() => {
+    saveHeartbeatsTimer = null;
+    const obj = Object.fromEntries(heartbeats);
+    fs.writeFile(HEARTBEAT_FILE, JSON.stringify(obj), 'utf8').catch(() => {});
+  }, 5000);
+}
+function saveHeartbeatsNow() {
+  if (saveHeartbeatsTimer) { clearTimeout(saveHeartbeatsTimer); saveHeartbeatsTimer = null; }
   const obj = Object.fromEntries(heartbeats);
   fsSync.writeFileSync(HEARTBEAT_FILE, JSON.stringify(obj), 'utf8');
 }
@@ -88,16 +98,21 @@ async function discoverProjects() {
     } catch { continue; }
     if (jsonlFiles.length === 0) continue;
 
-    // Read the first few lines of the first jsonl to find cwd
+    // Read only the first 4KB of the first jsonl to find cwd
     let realPath = null;
     try {
-      const content = await fs.readFile(path.join(projDir, jsonlFiles[0]), 'utf8');
-      for (const line of content.split('\n').slice(0, JSONL_SCAN_LINES)) {
-        try {
-          const evt = JSON.parse(line.trim());
-          if (evt.cwd) { realPath = evt.cwd; break; }
-        } catch { /* ignored */ }
-      }
+      const fh = await fs.open(path.join(projDir, jsonlFiles[0]), 'r');
+      try {
+        const buf = Buffer.alloc(4096);
+        const { bytesRead } = await fh.read(buf, 0, 4096, 0);
+        const chunk = buf.toString('utf8', 0, bytesRead);
+        for (const line of chunk.split('\n').slice(0, JSONL_SCAN_LINES)) {
+          try {
+            const evt = JSON.parse(line.trim());
+            if (evt.cwd) { realPath = evt.cwd; break; }
+          } catch { /* ignored */ }
+        }
+      } finally { await fh.close(); }
     } catch { /* ignored */ }
     if (!realPath) continue;
 
@@ -142,25 +157,17 @@ app.get('/sw.js', (req, res) => {
   res.sendFile(path.join(ASSETS_DIR, 'sw.js'));
 });
 
-// GET /offline — shell route for service worker fallback
-app.get('/offline', async (req, res) => {
+// Serve dashboard shell
+async function serveDashboard(req, res) {
   try {
     const html = await fs.readFile(path.join(ASSETS_DIR, 'dashboard.html'), 'utf8');
     res.type('html').send(html);
   } catch {
     res.status(500).send('dashboard.html not found');
   }
-});
-
-// GET / — serve dashboard shell
-app.get('/', async (req, res) => {
-  try {
-    const html = await fs.readFile(path.join(ASSETS_DIR, 'dashboard.html'), 'utf8');
-    res.type('html').send(html);
-  } catch {
-    res.status(500).send('dashboard.html not found');
-  }
-});
+}
+app.get('/', serveDashboard);
+app.get('/offline', serveDashboard);
 
 // Helper: build per-project session map from custom-title events + heartbeat state.
 async function buildSessionMap(projectId) {
@@ -217,7 +224,8 @@ async function buildSessionMap(projectId) {
 
 // GET /api/state — consolidated dashboard state
 app.get('/api/state', async (req, res) => {
-  const discovered = await discoverProjects();
+  cachedProjects = await discoverProjects();
+  const discovered = cachedProjects;
 
   // Determine which projects have live heartbeats (avoid expensive jsonl grep for inactive ones).
   // Collect alive heartbeat cwds so we can prefix-match against project paths
@@ -233,6 +241,7 @@ app.get('/api/state', async (req, res) => {
   const projects = await Promise.all(discovered.map(async (p) => {
     let stats = { todo: 0, ongoing: 0, done: 0, backlog: 0, total: 0 };
     let content = '';
+    const activeTaskSlugs = new Set();
     try {
       content = await fs.readFile(path.join(p.path, 'TASKS.md'), 'utf8');
       for (const line of content.split('\n')) {
@@ -240,6 +249,8 @@ app.get('/api/state', async (req, res) => {
         else if (/^- \[\/\]/.test(line)) { stats.ongoing++; stats.total++; }
         else if (/^- \[x\]/i.test(line)) { stats.done++; stats.total++; }
         else if (/^- \[-\]/.test(line)) { stats.backlog++; stats.total++; }
+        const m = line.match(/^- \[[ /]\] .+#([\w-]+)\s*$/);
+        if (m) activeTaskSlugs.add(m[1]);
       }
     } catch { /* ignored */ }
 
@@ -249,12 +260,6 @@ app.get('/api/state', async (req, res) => {
     const projectActive = aliveCwds.some(cwd => cwd === p.path || cwd.startsWith(p.path + '/'));
     if (projectActive) {
       sessionMap = await buildSessionMap(p.id);
-      // Build set of task slugs that are ongoing or todo (exclude done/backlog)
-      const activeTaskSlugs = new Set();
-      for (const line of content.split('\n')) {
-        const m = line.match(/^- \[[ /]\] .+#([\w-]+)\s*$/);
-        if (m) activeTaskSlugs.add(m[1]);
-      }
       // Derive aggregate counts from sessionMap, only for ongoing/todo tasks
       for (const [title, s] of Object.entries(sessionMap)) {
         if (!activeTaskSlugs.has(title)) continue;
@@ -492,6 +497,7 @@ app.use((err, req, res, _next) => {
 
 function gracefulShutdown() {
   console.log('[octask] Idle for 24h — shutting down');
+  saveHeartbeatsNow();
   for (const res of sseConnections) {
     try { res.end(); } catch { /* connection closed */ }
   }

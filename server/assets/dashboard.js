@@ -39,12 +39,6 @@
     }
 
     // Call this before any mutation to save the pre-mutation state
-    function saveForUndo() { // eslint-disable-line no-unused-vars
-      const snap = lastCleanSnapshot || takeSnapshot();
-      undoStack.push(snap);
-      if (undoStack.length > MAX_UNDO) undoStack.shift();
-    }
-
     function undo() {
       if (undoStack.length === 0) { showStatus('Nothing to undo'); return; }
       sections = undoStack.pop();
@@ -116,7 +110,7 @@
       const h2 = $('emptyState').querySelector('h2');
       const p = $('emptyState').querySelector('p');
       h2.textContent = 'Server Not Running';
-      p.innerHTML = 'Use <code style="font-family:var(--mono);font-size:14px;background:var(--bg-warm);border:1px solid var(--border);padding:6px 14px;border-radius:var(--radius-sm);margin-top:10px;color:var(--accent);user-select:all">/dashboard</code> in Claude Code to start the server.';
+      p.innerHTML = 'Use <code>/dashboard</code> in Claude Code to start the server.';
       $('emptyState').style.display = 'flex';
       $('sidebar').style.display = 'none';
       $('boardWrapper').style.display = 'none';
@@ -608,15 +602,11 @@
 
         // Done column: add toggle button (always visible)
         if (status === 'done') {
-          const toggleBtn = document.createElement('button');
-          toggleBtn.className = 'col-toggle-btn';
-          if (hideDone) {
-            toggleBtn.innerHTML = '<svg viewBox="0 0 16 16" fill="none"><path d="M2 8s2.5-5 6-5 6 5 6 5-2.5 5-6 5-6-5-6-5z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><circle cx="8" cy="8" r="2" stroke="currentColor" stroke-width="1.5"/></svg>Show';
-          } else {
-            toggleBtn.innerHTML = '<svg viewBox="0 0 16 16" fill="none"><path d="M2 8s2.5-5 6-5 6 5 6 5-2.5 5-6 5-6-5-6-5z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><circle cx="8" cy="8" r="2" stroke="currentColor" stroke-width="1.5"/><line x1="3" y1="13" x2="13" y2="3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>Hide';
-          }
           const showSvg = '<svg viewBox="0 0 16 16" fill="none"><path d="M2 8s2.5-5 6-5 6 5 6 5-2.5 5-6 5-6-5-6-5z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><circle cx="8" cy="8" r="2" stroke="currentColor" stroke-width="1.5"/></svg>Show';
           const hideSvg = '<svg viewBox="0 0 16 16" fill="none"><path d="M2 8s2.5-5 6-5 6 5 6 5-2.5 5-6 5-6-5-6-5z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><circle cx="8" cy="8" r="2" stroke="currentColor" stroke-width="1.5"/><line x1="3" y1="13" x2="13" y2="3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>Hide';
+          const toggleBtn = document.createElement('button');
+          toggleBtn.className = 'col-toggle-btn';
+          toggleBtn.innerHTML = hideDone ? showSvg : hideSvg;
           toggleBtn.addEventListener('click', (e) => {
             e.stopPropagation();
             hideDone = !hideDone;
