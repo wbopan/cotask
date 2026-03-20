@@ -5,3 +5,4 @@ node_modules/
 .claude/worktrees/
 TASKS.md
 .claude/
+evals/
