@@ -3,6 +3,5 @@ node_modules/
 .DS_Store
 .worktrees/
 .claude/worktrees/
-TASKS.md
 .claude/
 evals/

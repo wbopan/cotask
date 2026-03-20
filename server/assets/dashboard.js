@@ -1513,7 +1513,7 @@
           history.replaceState({}, '', '/project/' + encodeURIComponent(projectId));
         } else {
           $('emptyState').querySelector('h2').textContent = 'No projects found';
-          $('emptyState').querySelector('p').textContent = 'No projects with TASKS.md were found in ~/.claude/projects.';
+          $('emptyState').querySelector('p').textContent = 'No projects with .claude/TASKS.md were found in ~/.claude/projects.';
           return;
         }
       }

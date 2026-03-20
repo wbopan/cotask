@@ -21,7 +21,25 @@ const OSASCRIPT_TIMEOUT_MS = 5000;
 const SHUTDOWN_FORCE_TIMEOUT_MS = 5000;
 const IDLE_CHECK_INTERVAL_MS = 10 * 60 * 1000;
 const JSONL_SCAN_LINES = 20;
+const TASKS_FILENAME = 'TASKS.md';
+const TASKS_DOTCLAUDE = path.join('.claude', TASKS_FILENAME);
 const sseConnections = new Set();
+
+// Check if .claude/TASKS.md exists for a project.
+async function tasksFileExists(projectPath) {
+  try {
+    await fs.access(path.join(projectPath, TASKS_DOTCLAUDE));
+    return true;
+  } catch { return false; }
+}
+
+function tasksAbsolute(projectPath) {
+  return path.join(projectPath, TASKS_DOTCLAUDE);
+}
+
+function tasksDir(projectPath) {
+  return path.join(projectPath, '.claude');
+}
 
 app.use((req, _res, next) => {
   lastActivityAt = Date.now();
@@ -119,16 +137,13 @@ async function discoverProjects() {
     // Verify: encode the real path and check it matches this dir name
     if (encodeProjectPath(realPath) !== dirName) continue;
 
-    // Check for TASKS.md
-    try {
-      await fs.access(path.join(realPath, 'TASKS.md'));
+    // Check for .claude/TASKS.md
+    if (await tasksFileExists(realPath)) {
       projects.push({
         id: dirName,
         name: path.basename(realPath),
         path: realPath,
       });
-    } catch {
-      // no TASKS.md, skip
     }
   }
   return projects;
@@ -243,7 +258,7 @@ app.get('/api/state', async (req, res) => {
     let content = '';
     const activeTaskSlugs = new Set();
     try {
-      content = await fs.readFile(path.join(p.path, 'TASKS.md'), 'utf8');
+      content = await fs.readFile(tasksAbsolute(p.path), 'utf8');
       for (const line of content.split('\n')) {
         if (/^- \[ \]/.test(line)) { stats.todo++; stats.total++; }
         else if (/^- \[\/\]/.test(line)) { stats.ongoing++; stats.total++; }
@@ -304,8 +319,9 @@ app.put('/api/tasks/:projectId', async (req, res) => {
     return res.status(400).json({ error: 'content must be a string' });
   }
 
-  const filePath = path.join(project.path, 'TASKS.md');
+  const filePath = tasksAbsolute(project.path);
   try {
+    await fs.mkdir(path.dirname(filePath), { recursive: true });
     await fs.writeFile(filePath, content, 'utf8');
   } catch (err) {
     return res.status(500).json({ error: 'Failed to write TASKS.md: ' + err.message });
@@ -375,8 +391,8 @@ app.get('/api/watch/:projectId', async (req, res) => {
   const project = await getProjectById(projectId);
   if (!project) return res.status(404).json({ error: 'Project not found' });
 
-  const dirPath = project.path;
-  const targetFile = 'TASKS.md';
+  const dirPath = tasksDir(project.path);
+  const targetFile = TASKS_FILENAME;
 
   res.writeHead(200, {
     'Content-Type': 'text/event-stream',

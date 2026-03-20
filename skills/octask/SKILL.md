@@ -7,6 +7,10 @@ description: Task management conventions for TASKS.md files. Use this skill when
 
 Conventions and workflow for maintaining a `TASKS.md` file. This skill tells you how to read, write, and update tasks correctly.
 
+## File Location
+
+TASKS.md lives at `.claude/TASKS.md` (inside the project's `.claude/` directory). This keeps task files alongside other Claude config and out of the project's visible root.
+
 ## Sections
 
 Tasks in TASKS.md can optionally be grouped under `## Section Name` headers. Sections are lightweight grouping — they help organize tasks when a project has distinct areas of work, but they're entirely optional. A TASKS.md with no `##` headers at all is perfectly valid.
@@ -19,7 +23,7 @@ Each section can have an optional `Description:` paragraph after its header, exp
 
 Tasks can appear directly under `# TASKS` without any section header — this is the simplest form. When sections are used, each `## ` header starts a new group.
 
-When creating a new TASKS.md from scratch, copy `references/template.md` and fill in the placeholders.
+When creating a new TASKS.md from scratch, copy `references/template.md` to `.claude/TASKS.md` and fill in the placeholders.
 
 ## Status Symbols
 

@@ -1,6 +1,6 @@
 # Octask
 
-A Claude Code plugin that adds task management via `TASKS.md` files and a real-time kanban dashboard.
+A Claude Code plugin that adds task management via `.claude/TASKS.md` files and a real-time kanban dashboard.
 
 ## What It Does
 
