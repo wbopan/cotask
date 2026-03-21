@@ -1,4 +1,4 @@
-const CACHE_NAME = 'octask-v3';
+const CACHE_NAME = 'cotask-v4';
 const SHELL_URLS = [
   '/offline',
   '/assets/dashboard.css',

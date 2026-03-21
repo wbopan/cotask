@@ -225,3 +225,29 @@ Task Management 技能的任务跟踪 — 一个看板 dashboard，用于维护 
     切换项目后，主面板（board area）顶部的项目名称仍显示上一个项目的名字，没有随项目切换而更新。
     CM: 根因是 `window.__projectName`（服务端初始注入，固定不变）优先级高于 `allProjects` 动态查找。将 `dashboard.js:1503` 的 `||` 顺序反转，优先从 `allProjects` 按当前 `projectId` 查找名称。
     AC: 在 sidebar 中切换项目后，board 顶部的项目名称立即更新为当前选中项目的名称。
+
+- [ ] 显示未追踪的 session #show-untracked-sessions
+    当前 dashboard 只显示与 TASKS.md 中 ongoing 任务关联的 session。未被任何任务追踪的活跃 session（有心跳但没有匹配到任何 ongoing task 的 session）应在 dashboard 中有专门的展示区域，让用户了解所有正在运行的 Claude Code session。
+    AC: 有心跳但未关联任何 ongoing 任务的活跃 session 在 dashboard 中可见；用户能区分已追踪和未追踪的 session。
+
+## Promotion
+Description: 在各社交平台推广 Octask 项目。
+
+- [/] 撰写推广文案和素材 #promo-copy-and-assets
+    为各社交平台准备推广所需的文案、截图、GIF 演示等素材。突出 Octask 的核心卖点：Claude Code 集成的看板任务管理、实时 dashboard、拖拽操作、session 状态监控。
+    AC: 准备好至少一套通用推广文案和 3-5 张产品截图/GIF，可适配不同平台格式。
+- [ ] Twitter/X 推广 #promo-twitter
+    在 Twitter/X 上发布 Octask 介绍帖，利用开发者社区标签（#ClaudeCode、#AI、#DevTools）扩大触达。考虑发布 thread 形式展示功能亮点。
+    AC: Twitter/X 上发布至少一条推广帖，包含产品截图或 GIF 演示。
+- [ ] Reddit 推广 #promo-reddit
+    在相关 subreddit（r/ClaudeAI、r/artificial、r/programming 等）发布 Octask 介绍帖，侧重实用价值和使用场景。
+    AC: 在至少一个相关 subreddit 发布推广帖。
+- [ ] 小红书推广 #promo-xiaohongshu
+    在小红书发布 Octask 图文笔记，面向中文开发者社区。内容偏视觉化，突出 dashboard 界面和使用体验。
+    AC: 小红书上发布至少一篇包含产品截图的推广笔记。
+- [ ] 即刻推广 #promo-jike
+    在即刻 App 发布 Octask 动态，面向科技/独立开发者圈子。
+    AC: 即刻上发布至少一条推广动态。
+    切换项目后，主面板（board area）顶部的项目名称仍显示上一个项目的名字，没有随项目切换而更新。
+    CM: 根因是 `window.__projectName`（服务端初始注入，固定不变）优先级高于 `allProjects` 动态查找。将 `dashboard.js:1503` 的 `||` 顺序反转，优先从 `allProjects` 按当前 `projectId` 查找名称。
+    AC: 在 sidebar 中切换项目后，board 顶部的项目名称立即更新为当前选中项目的名称。

@@ -1,12 +1,12 @@
 ---
 name: dashboard
-description: Start the Octask Dashboard and open it in the browser
+description: Start the Cotask Dashboard and open it in the browser
 allowed-tools: [Bash]
 ---
 
 # Dashboard
 
-Start the Octask Dashboard server and open it in the user's browser.
+Start the Cotask Dashboard server and open it in the user's browser.
 
 ## Instructions
 

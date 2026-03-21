@@ -38,7 +38,7 @@ function tasksDir(projectPath) {
 
 // Heartbeat store: sessionId → { state, ts, pid }
 // Persisted to disk so state survives server restarts.
-const HEARTBEAT_FILE = path.join(os.tmpdir(), 'octask-heartbeats.json');
+const HEARTBEAT_FILE = path.join(os.tmpdir(), 'cotask-heartbeats.json');
 const heartbeats = new Map();
 
 function loadHeartbeats() {
@@ -578,12 +578,12 @@ const server = Bun.serve({
   },
 });
 
-console.log(`Octask Dashboard running at http://localhost:${PORT}`);
+console.log(`Cotask Dashboard running at http://localhost:${PORT}`);
 
 // ===== Graceful shutdown =====
 
 function gracefulShutdown() {
-  console.log('[octask] Idle for 24h — shutting down');
+  console.log('[cotask] Idle for 24h — shutting down');
   saveHeartbeatsNow();
   sseConnections.clear();
   server.stop();

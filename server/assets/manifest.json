@@ -1,6 +1,6 @@
 {
-  "name": "Octask",
-  "short_name": "Octask",
+  "name": "Cotask",
+  "short_name": "Cotask",
   "description": "Kanban dashboard for Claude Code task management",
   "start_url": "/",
   "display": "standalone",

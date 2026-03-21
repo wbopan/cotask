@@ -1,4 +1,4 @@
-# Contributing to Octask
+# Contributing to Cotask
 
 Thanks for your interest in contributing!
 
@@ -6,8 +6,8 @@ Thanks for your interest in contributing!
 
 ```bash
 # Clone the repo
-git clone https://github.com/anthropics/octask.git
-cd octask
+git clone https://github.com/anthropics/cotask.git
+cd cotask
 
 # Start the dashboard with hot reload
 bun --watch server/server.js
@@ -18,7 +18,7 @@ The dashboard runs at `http://localhost:3847`.
 ## Project Structure
 
 - `server/` — Bun HTTP server and dashboard assets (HTML/CSS/JS, no build step)
-- `skills/` — Skills: `octask` (TASKS.md convention), `creating-task`, `starting-task`, `dashboard`
+- `skills/` — Skills: `cotask` (TASKS.md convention), `creating-task`, `starting-task`, `dashboard`
 - `hooks/` — Lifecycle hooks (heartbeat reporting)
 - `scripts/` — Helper scripts (start server, sync to cache)
 - `evals/` — Eval suite for skill behavior testing
@@ -33,4 +33,4 @@ The dashboard runs at `http://localhost:3847`.
 
 - Keep changes focused — one concern per PR.
 - Follow existing code style (no linter configured yet, just match what's there).
-- If you change the TASKS.md convention, update `skills/octask/SKILL.md` and the eval fixtures.
+- If you change the TASKS.md convention, update `skills/cotask/SKILL.md` and the eval fixtures.

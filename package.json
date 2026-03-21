@@ -12,15 +12,15 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/wbopan/octask.git"
+    "url": "git+https://github.com/wbopan/cotask.git"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "bugs": {
-    "url": "https://github.com/wbopan/octask/issues"
+    "url": "https://github.com/wbopan/cotask/issues"
   },
-  "homepage": "https://github.com/wbopan/octask#readme",
+  "homepage": "https://github.com/wbopan/cotask#readme",
   "devDependencies": {
     "@eslint/js": "^10.0.1",
     "eslint": "^10.0.3"

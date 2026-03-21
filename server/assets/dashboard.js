@@ -24,7 +24,7 @@
     let isSaving = false;
     let activeSectionId = null; // selected section in sidebar, null = show all
     let sessionMap = {}; // customTitle → { sessionId, status, summary } — active project
-    let hideDone = localStorage.getItem('octask-hide-done') !== 'false';
+    let hideDone = localStorage.getItem('cotask-hide-done') !== 'false';
     let healthPollTimer = null;
     let lastSessionSnapshot = null;
     let lastSavedMarkdown = null;
@@ -169,7 +169,7 @@
     //  ≤780px: also hide Backlog           (3×260 = 780)
     const COLUMN_PICKER_BP = 1390;
     const COLUMN_PICKER_NARROW_BP = 780;
-    const COLUMN_PICKER_STORAGE_KEY = 'octask-visible-columns';
+    const COLUMN_PICKER_STORAGE_KEY = 'cotask-visible-columns';
 
     function columnPickerDefault() {
       if (window.innerWidth <= COLUMN_PICKER_NARROW_BP) return ['ongoing', 'todo'];
@@ -753,7 +753,7 @@
           toggleBtn.addEventListener('click', (e) => {
             e.stopPropagation();
             hideDone = !hideDone;
-            localStorage.setItem('octask-hide-done', String(hideDone));
+            localStorage.setItem('cotask-hide-done', String(hideDone));
             const doneCol = toggleBtn.closest('.status-column');
             doneCol.classList.toggle('collapsed', hideDone);
             toggleBtn.innerHTML = hideDone ? showSvg : hideSvg;
@@ -1502,7 +1502,7 @@
 
         const projectName = (allProjects.find(p => p.id === projectId) || {}).name || window.__projectName;
         if (projectName) {
-          document.title = `${projectName} — Octask`;
+          document.title = `${projectName} — Cotask`;
           $('boardProjectName').textContent = projectName;
         }
 

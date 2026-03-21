@@ -1,21 +1,49 @@
-# Octask
+<p align="center">
+  <img src="server/assets/Icon-iOS-Default-256x256@1x.png" width="128" height="128" alt="Cotask icon">
+</p>
 
-A Claude Code plugin that adds task management via `TASKS.md` files and a real-time kanban dashboard.
+<h1 align="center">Cotask</h1>
 
-## What It Does
+<p align="center">Principled project management for Claude Code agents.</p>
 
-- **TASKS.md convention** — a lightweight task format with statuses (`[ ]` todo, `[/]` ongoing, `[x]` done, `[-]` backlog), slugs, acceptance criteria, and completion memos.
-- **Kanban dashboard** — a browser-based board that parses and renders TASKS.md, with drag-and-drop status changes, live file watching (SSE), multi-project switching, and undo.
-- **Slash commands** — `/starting-task` marks a task ongoing and begins work, `/creating-task` adds a new task.
-- **Session tracking** — heartbeat hooks report Claude Code session state to the dashboard, with PID-based liveness detection and Ghostty tab focus integration.
+<p align="center">
+  <a href="https://github.com/wbopan/cotask"><img src="https://img.shields.io/github/v/tag/wbopan/cotask?style=for-the-badge&label=version&color=0d9488" alt="Version"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/github/license/wbopan/cotask?style=for-the-badge&color=0d9488" alt="License"></a>
+  <a href="https://github.com/wbopan/cotask"><img src="https://img.shields.io/badge/runtime-Bun-f472b6?style=for-the-badge" alt="Bun"></a>
+  <a href="https://github.com/wbopan/cotask"><img src="https://img.shields.io/badge/plugin-Claude_Code-7c3aed?style=for-the-badge" alt="Claude Code"></a>
+</p>
+
+<p align="center">
+  <img src="server/assets/screenshot.png" alt="Cotask dashboard screenshot" width="800">
+</p>
+
+## Why Cotask
+
+1. **A skill and a dashboard for your TASKS.md.** Cotask is a Claude Code skill that manages tasks through a single `TASKS.md` file. Both you and your agents read and update it. A local web dashboard lets you view, drag-and-drop, and edit tasks intuitively.
+
+2. **Driven by project management best practices.** Each task has acceptance criteria that define what "done" looks like, and a completion memo where the agent records what it actually did. Tasks follow a clear lifecycle — backlog, todo, ongoing, done, each serving clear purpose.
+
+3. **Monitor and navigate your running sessions.** When a task is ongoing and bound to an active Claude Code session, the dashboard shows its state in real-time — running, idle, or waiting for permission. Click to jump straight to that terminal session.
+
+<p align="center">
+  <img src="server/assets/demo.gif" alt="Cotask dashboard demo" width="800">
+</p>
+
+## Design Philosophy
+
+1. **Human-in-the-loop, not human-out-of-the-loop.** Cotask is not about making agents fully autonomous. It's about letting you manage and intervene more efficiently — define what needs to be done, set the acceptance criteria, and approve when it's done.
+
+2. **The right interface for each species.** Humans get a visual web dashboard. Agents get a structured skill that reads and writes markdown. Same underlying data, two interfaces, each suited to how its species operates.
+
+3. **More parallel work, less cognitive overhead.** Managing multiple agents across multiple tasks is mentally taxing. Cotask consolidates everything into one view, shows you what needs your attention, and lets you navigate to any session directly.
 
 ## Getting Started
 
 ### 1. Install the plugin
 
 ```bash
-claude plugins add-marketplace https://github.com/wbopan/octask-marketplace.git
-claude plugins install octask@octask
+claude plugins add-marketplace https://github.com/wbopan/cotask-marketplace.git
+claude plugins install cotask@cotask
 ```
 
 ### 2. Create your first task
@@ -34,7 +62,7 @@ This creates a `TASKS.md` file in your project with your first task.
 /dashboard
 ```
 
-Claude will start the dashboard server and open it in your browser at `http://localhost:3847`. You can also save it as a PWA for quick access.
+Claude will start the dashboard server and open it in your browser.
 
 ### 4. Work on tasks
 
@@ -53,11 +81,11 @@ Claude marks the task as ongoing, understands the requirements, plans the approa
 | `/dashboard` | Start the dashboard server and open it in the browser |
 | `/creating-task <description>` | Create a new task in TASKS.md |
 | `/starting-task #slug` | Mark a task as ongoing and begin working on it |
-| `/octask` | View the full TASKS.md convention reference |
+| `/cotask` | View the full TASKS.md convention reference |
 
 ## How It Works
 
-Octask tracks tasks in a `TASKS.md` file at the project root using a simple markdown format:
+Cotask tracks tasks in a `TASKS.md` file at the project root using a simple markdown format:
 
 ```markdown
 # TASKS
@@ -76,14 +104,6 @@ Project description here.
 ```
 
 Status symbols: `[ ]` todo, `[/]` ongoing, `[x]` done, `[-]` backlog.
-
-## Development
-
-```bash
-bun --watch server/server.js
-```
-
-Dashboard runs at `http://localhost:3847`. See [CONTRIBUTING.md](CONTRIBUTING.md) for more details.
 
 ## License
 
