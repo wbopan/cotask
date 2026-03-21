@@ -18,6 +18,9 @@ const SHUTDOWN_FORCE_TIMEOUT_MS = 5000;
 const IDLE_CHECK_INTERVAL_MS = 10 * 60 * 1000;
 const JSONL_SCAN_LINES = 20;
 const TASKS_FILENAME = 'TASKS.md';
+const DISCOVER_CACHE_TTL = 10_000;
+const TASKS_CONTENT_CACHE_TTL = 60_000;
+const CUSTOM_TITLE_CACHE_TTL = 10_000;
 const sseConnections = new Set();
 
 // Check if TASKS.md exists for a project (root level).
@@ -74,13 +77,26 @@ function encodeProjectPath(absPath) {
     .replace(/\//g,  '-');
 }
 
+// --- Caches ---
+// discoverProjects cache
+let discoverCache = { projects: null, fetchedAt: 0 };
+// TASKS.md content cache: projectId → { content, stats, activeTaskSlugs, mtimeMs }
+const tasksContentCache = new Map();
+// custom-title grep cache: projectId → { titleMap, fetchedAt }
+const customTitleCache = new Map();
+
 // Discover projects by scanning ~/.claude/projects/
-async function discoverProjects() {
+async function discoverProjects(forceFresh = false) {
+  const now = Date.now();
+  if (!forceFresh && discoverCache.projects && (now - discoverCache.fetchedAt) < DISCOVER_CACHE_TTL) {
+    return discoverCache.projects;
+  }
+
   let entries;
   try {
     entries = await fs.readdir(PROJECTS_DIR, { withFileTypes: true });
   } catch {
-    return [];
+    return discoverCache.projects || [];
   }
 
   const projectDirNames = new Set();
@@ -88,15 +104,15 @@ async function discoverProjects() {
     if (entry.isDirectory()) projectDirNames.add(entry.name);
   }
 
-  const projects = [];
-  for (const dirName of projectDirNames) {
+  // Parallelize per-project discovery
+  const results = await Promise.all([...projectDirNames].map(async (dirName) => {
     const projDir = path.join(PROJECTS_DIR, dirName);
     let jsonlFiles;
     try {
       const all = await fs.readdir(projDir);
       jsonlFiles = all.filter(f => f.endsWith('.jsonl'));
-    } catch { continue; }
-    if (jsonlFiles.length === 0) continue;
+    } catch { return null; }
+    if (jsonlFiles.length === 0) return null;
 
     let realPath = null;
     for (const jf of jsonlFiles) {
@@ -116,41 +132,68 @@ async function discoverProjects() {
       } catch { /* ignored */ }
       if (realPath) break;
     }
-    if (!realPath) continue;
+    if (!realPath) return null;
+    if (encodeProjectPath(realPath) !== dirName) return null;
+    if (!(await tasksFileExists(realPath))) return null;
 
-    if (encodeProjectPath(realPath) !== dirName) continue;
+    return { id: dirName, name: path.basename(realPath), path: realPath };
+  }));
 
-    if (await tasksFileExists(realPath)) {
-      projects.push({
-        id: dirName,
-        name: path.basename(realPath),
-        path: realPath,
-      });
-    }
-  }
+  const projects = results.filter(Boolean);
+  discoverCache = { projects, fetchedAt: Date.now() };
   return projects;
 }
 
-// In-memory cache for project API routes
-let cachedProjects = null;
-
 async function getProjectById(projectId) {
-  if (!cachedProjects) {
-    cachedProjects = await discoverProjects();
-  }
-  let project = cachedProjects.find(p => p.id === projectId);
+  let projects = await discoverProjects();
+  let project = projects.find(p => p.id === projectId);
   if (!project) {
-    cachedProjects = await discoverProjects();
-    project = cachedProjects.find(p => p.id === projectId);
+    projects = await discoverProjects(true);
+    project = projects.find(p => p.id === projectId);
   }
   return project || null;
 }
 
-// Helper: build per-project session map from custom-title events + heartbeat state.
-async function buildSessionMap(projectId) {
-  const projectDir = path.join(PROJECTS_DIR, projectId);
-  const sessionMap = new Map();
+// Read TASKS.md with mtime-based cache
+async function readTasksContentCached(project) {
+  const filePath = tasksAbsolute(project.path);
+  try {
+    const stat = await fs.stat(filePath);
+    const cached = tasksContentCache.get(project.id);
+    if (cached && cached.mtimeMs === stat.mtimeMs) {
+      return cached;
+    }
 
+    const content = await fs.readFile(filePath, 'utf8');
+    const stats = { todo: 0, ongoing: 0, done: 0, backlog: 0, total: 0 };
+    const activeTaskSlugs = new Set();
+    for (const line of content.split('\n')) {
+      if (/^- \[ \]/.test(line)) { stats.todo++; stats.total++; }
+      else if (/^- \[\/\]/.test(line)) { stats.ongoing++; stats.total++; }
+      else if (/^- \[x\]/i.test(line)) { stats.done++; stats.total++; }
+      else if (/^- \[-\]/.test(line)) { stats.backlog++; stats.total++; }
+      const m = line.match(/^- \[[ /]\] .+#([\w-]+)\s*$/);
+      if (m) activeTaskSlugs.add(m[1]);
+    }
+
+    const entry = { content, stats, activeTaskSlugs, mtimeMs: stat.mtimeMs };
+    tasksContentCache.set(project.id, entry);
+    return entry;
+  } catch {
+    return { content: '', stats: { todo: 0, ongoing: 0, done: 0, backlog: 0, total: 0 }, activeTaskSlugs: new Set(), mtimeMs: 0 };
+  }
+}
+
+// Grep custom-title events with cache
+async function getCustomTitles(projectId) {
+  const now = Date.now();
+  const cached = customTitleCache.get(projectId);
+  if (cached && (now - cached.fetchedAt) < CUSTOM_TITLE_CACHE_TTL) {
+    return cached.titleMap;
+  }
+
+  const projectDir = path.join(PROJECTS_DIR, projectId);
+  const titleMap = new Map();
   try {
     const { stdout } = await execFileAsync('grep', [
       '-r', '--include=*.jsonl', '-h', '"custom-title"', projectDir,
@@ -159,20 +202,32 @@ async function buildSessionMap(projectId) {
       try {
         const evt = JSON.parse(line.trim());
         if (evt.type === 'custom-title' && evt.customTitle && evt.sessionId) {
-          sessionMap.set(evt.sessionId, evt.customTitle);
+          titleMap.set(evt.sessionId, evt.customTitle);
         }
       } catch { /* ignored */ }
     }
   } catch { /* ignored */ }
 
-  const result = {};
+  customTitleCache.set(projectId, { titleMap, fetchedAt: Date.now() });
+  return titleMap;
+}
+
+// Helper: build per-project session map from custom-title events + heartbeat state.
+async function buildSessionMap(projectId) {
+  const sessionMap = await getCustomTitles(projectId);
+
+  // Collect sessions that need PID/process checks
+  const entries = [];
   for (const [sessionId, customTitle] of sessionMap) {
     const title = customTitle.trim();
     if (!title) continue;
+    entries.push({ sessionId, title });
+  }
 
+  // Parallelize all per-session checks
+  const results = await Promise.all(entries.map(async ({ sessionId, title }) => {
     let status = 'notfound';
     let childProcesses = 0;
-    let backgroundTasks = [];
     const hb = heartbeats.get(sessionId);
     if (hb) {
       let alive = true;
@@ -198,11 +253,15 @@ async function buildSessionMap(projectId) {
       }
     }
 
-    backgroundTasks = await scanBackgroundTasks(projectId, sessionId);
+    const backgroundTasks = await scanBackgroundTasks(projectId, sessionId);
     const stateTs = hb?.stateTs || null;
-    result[title] = { sessionId, status, childProcesses, backgroundTasks, stateTs };
-  }
+    return { title, data: { sessionId, status, childProcesses, backgroundTasks, stateTs } };
+  }));
 
+  const result = {};
+  for (const { title, data } of results) {
+    result[title] = data;
+  }
   return result;
 }
 
@@ -280,9 +339,9 @@ async function fetchUsageFromAPI(token) {
 // ===== Route handlers =====
 
 async function handleGetState() {
-  cachedProjects = await discoverProjects();
-  const discovered = cachedProjects;
+  const discovered = await discoverProjects();
 
+  // Precompute alive CWDs once (process.kill is sync, very fast)
   const aliveCwds = [];
   for (const [, hb] of heartbeats) {
     if (!hb.cwd) continue;
@@ -292,20 +351,7 @@ async function handleGetState() {
   }
 
   const projects = await Promise.all(discovered.map(async (p) => {
-    let stats = { todo: 0, ongoing: 0, done: 0, backlog: 0, total: 0 };
-    let content = '';
-    const activeTaskSlugs = new Set();
-    try {
-      content = await fs.readFile(tasksAbsolute(p.path), 'utf8');
-      for (const line of content.split('\n')) {
-        if (/^- \[ \]/.test(line)) { stats.todo++; stats.total++; }
-        else if (/^- \[\/\]/.test(line)) { stats.ongoing++; stats.total++; }
-        else if (/^- \[x\]/i.test(line)) { stats.done++; stats.total++; }
-        else if (/^- \[-\]/.test(line)) { stats.backlog++; stats.total++; }
-        const m = line.match(/^- \[[ /]\] .+#([\w-]+)\s*$/);
-        if (m) activeTaskSlugs.add(m[1]);
-      }
-    } catch { /* ignored */ }
+    const { content, stats, activeTaskSlugs } = await readTasksContentCached(p);
 
     let sessionMap = null;
     let sessions = { running: 0, idle: 0, permission: 0, 'bg-active': 0 };
@@ -367,6 +413,7 @@ async function handlePutTasks(projectId, req) {
   const filePath = tasksAbsolute(project.path);
   try {
     await fs.writeFile(filePath, content, 'utf8');
+    tasksContentCache.delete(projectId); // invalidate cache on write
   } catch (err) {
     return Response.json({ error: 'Failed to write TASKS.md: ' + err.message }, { status: 500 });
   }
@@ -389,6 +436,9 @@ async function handleHeartbeat(req) {
     const stateTs = (prev && prev.state === state) ? prev.stateTs : now;
     heartbeats.set(sessionId, { state, ts: now, stateTs, pid: pid || null, cwd: cwd || prev?.cwd || null });
   }
+  // Invalidate custom-title cache for this project so renames propagate immediately
+  const hbCwd = cwd || heartbeats.get(sessionId)?.cwd;
+  if (hbCwd) customTitleCache.delete(encodeProjectPath(hbCwd));
   saveHeartbeats();
   return Response.json({ ok: true });
 }
@@ -579,6 +629,9 @@ const server = Bun.serve({
 });
 
 console.log(`Cotask Dashboard running at http://localhost:${PORT}`);
+
+// Warm all caches at startup so the first dashboard load is fast
+handleGetState().catch(() => {});
 
 // ===== Graceful shutdown =====
 
