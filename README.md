@@ -4,7 +4,7 @@
 
 <h1 align="center">Cotask</h1>
 
-<p align="center">Principled project management for Claude Code agents.</p>
+<p align="center">Easy parallel project management for Claude Code agents.</p>
 
 <p align="center">
   <a href="https://github.com/wbopan/cotask"><img src="https://img.shields.io/github/v/tag/wbopan/cotask?style=for-the-badge&label=version&color=0d9488" alt="Version"></a>
