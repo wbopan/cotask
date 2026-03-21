@@ -99,20 +99,23 @@ async function discoverProjects() {
     if (jsonlFiles.length === 0) continue;
 
     let realPath = null;
-    try {
-      const fh = await fs.open(path.join(projDir, jsonlFiles[0]), 'r');
+    for (const jf of jsonlFiles) {
       try {
-        const buf = Buffer.alloc(4096);
-        const { bytesRead } = await fh.read(buf, 0, 4096, 0);
-        const chunk = buf.toString('utf8', 0, bytesRead);
-        for (const line of chunk.split('\n').slice(0, JSONL_SCAN_LINES)) {
-          try {
-            const evt = JSON.parse(line.trim());
-            if (evt.cwd) { realPath = evt.cwd; break; }
-          } catch { /* ignored */ }
-        }
-      } finally { await fh.close(); }
-    } catch { /* ignored */ }
+        const fh = await fs.open(path.join(projDir, jf), 'r');
+        try {
+          const buf = Buffer.alloc(4096);
+          const { bytesRead } = await fh.read(buf, 0, 4096, 0);
+          const chunk = buf.toString('utf8', 0, bytesRead);
+          for (const line of chunk.split('\n').slice(0, JSONL_SCAN_LINES)) {
+            try {
+              const evt = JSON.parse(line.trim());
+              if (evt.cwd) { realPath = evt.cwd; break; }
+            } catch { /* ignored */ }
+          }
+        } finally { await fh.close(); }
+      } catch { /* ignored */ }
+      if (realPath) break;
+    }
     if (!realPath) continue;
 
     if (encodeProjectPath(realPath) !== dirName) continue;
