@@ -1,7 +1,7 @@
 {
   "name": "cotask",
   "description": "Cotask — task management with TASKS.md kanban dashboard",
-  "version": "1.1.2",
+  "version": "1.1.3",
   "author": {
     "name": "Wenbo Pan"
   },
