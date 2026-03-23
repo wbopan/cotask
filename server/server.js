@@ -6,12 +6,13 @@ import http from 'http';
 import { fileURLToPath } from 'url';
 import { execFile as execFileCb } from 'child_process';
 import { promisify } from 'util';
+import { parseTasksStats, encodeProjectPath } from './lib/parse-tasks.js';
 const execFileAsync = promisify(execFileCb);
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
-const PORT = 3847;
-const PROJECTS_DIR = path.join(os.homedir(), '.claude', 'projects');
+const PORT = Number(process.env.COTASK_PORT) || 3847;
+const PROJECTS_DIR = process.env.COTASK_PROJECTS_DIR || path.join(os.homedir(), '.claude', 'projects');
 const ASSETS_DIR = path.join(__dirname, 'assets');
 let lastActivityAt = Date.now();
 const IDLE_SHUTDOWN_MS = 24 * 60 * 60 * 1000;
@@ -137,13 +138,7 @@ function saveHeartbeatsNow() {
 
 loadHeartbeats();
 
-// Encode a filesystem path into Claude Code's project directory name.
-function encodeProjectPath(absPath) {
-  return absPath
-    .replace(/^\//,  '-')
-    .replace(/\/\./g, '--')
-    .replace(/\//g,  '-');
-}
+// encodeProjectPath is imported from ./lib/parse-tasks.js
 
 // --- Caches ---
 // discoverProjects cache
@@ -233,16 +228,7 @@ async function readTasksContentCached(project) {
     }
 
     const content = await fs.readFile(filePath, 'utf8');
-    const stats = { todo: 0, ongoing: 0, done: 0, backlog: 0, total: 0 };
-    const activeTaskSlugs = new Set();
-    for (const line of content.split('\n')) {
-      if (/^- \[ \]/.test(line)) { stats.todo++; stats.total++; }
-      else if (/^- \[\/\]/.test(line)) { stats.ongoing++; stats.total++; }
-      else if (/^- \[x\]/i.test(line)) { stats.done++; stats.total++; }
-      else if (/^- \[-\]/.test(line)) { stats.backlog++; stats.total++; }
-      const m = line.match(/^- \[[ /]\] .+#([\w-]+)\s*$/);
-      if (m) activeTaskSlugs.add(m[1]);
-    }
+    const { stats, activeTaskSlugs } = parseTasksStats(content);
 
     const entry = { content, stats, activeTaskSlugs, mtimeMs: stat.mtimeMs };
     tasksContentCache.set(project.id, entry);

@@ -7,7 +7,7 @@
     "doc": "docs"
   },
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
+    "test": "node --test tests/parse-tasks.test.js tests/tasks-markdown.test.js tests/api.test.js",
     "lint": "npx eslint server/server.js server/assets/dashboard.js"
   },
   "repository": {
