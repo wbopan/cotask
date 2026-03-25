@@ -1,12 +1,12 @@
 ---
 name: dashboard
-description: Start the Cotask Dashboard and open it in the browser
+description: Start the Cotask Dashboard and show the link for the user to open
 allowed-tools: [Bash]
 ---
 
 # Dashboard
 
-Start the Cotask Dashboard server and open it in the user's browser.
+Start the Cotask Dashboard server and show the link for the user to open.
 
 ## Instructions
 
@@ -32,15 +32,10 @@ for i in $(seq 1 30); do
 done
 ```
 
-### 3. Open the dashboard in the browser
+### 3. Show the link
 
-```bash
-open "http://localhost:3847" 2>/dev/null || xdg-open "http://localhost:3847" 2>/dev/null
-```
-
-### 4. Tell the user
-
-Report to the user:
-- The dashboard is running at `http://localhost:3847`
+Tell the user the dashboard is ready and display the link:
+- Show `http://localhost:3847` as a clickable link for the user to open
+- Do NOT run `open` or `xdg-open` — let the user click the link themselves
 - Suggest they save the page as a **PWA** (Progressive Web App) for quick access — in Chrome/Edge, click the install icon in the address bar or use Menu → "Install app"
 - The server will auto-shutdown after 24 hours of inactivity
