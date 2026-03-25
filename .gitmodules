@@ -1,0 +1,3 @@
+[submodule "cotask-marketplace"]
+	path = cotask-marketplace
+	url = https://github.com/wbopan/cotask-marketplace.git
